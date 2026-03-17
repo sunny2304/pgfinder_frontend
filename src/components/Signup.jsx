@@ -13,20 +13,19 @@ export const Signup = () => {
   const navigate = useNavigate()
   const password = watch("password");
 
-  const onSubmit = async(data) => {
-    console.log("data..",data);
-    //axios.post("http://localhost:3000/user/register")
-    const res = await axios.post("/user/register",data)
+ const onSubmit = async (data) => {
+  try {
+    const res = await axios.post("/register", data);
 
-    console.log("response..",res)
-    console.log("response.data..",res.data)
-    console.log("response.data.data..",res.data.data)
-    console.log("status",res.status)
-    if(res.status==201){
-      toast.success("User registered successfully")
-      navigate("/") // / -->login -->check your routes in AppRouter.jsx
+    if (res.status === 201) {
+      toast.success("User registered successfully");
+      navigate("/");
     }
-  };
+  } catch (err) {
+    console.log(err);
+    toast.error(err.response?.data?.message || "Signup failed");
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-green-50">

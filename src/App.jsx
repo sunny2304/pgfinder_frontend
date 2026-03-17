@@ -8,7 +8,7 @@ import axios from 'axios'
 
 function App() {
   const [count, setCount] = useState(0)
-  axios.defaults.baseURL = "http://localhost:3000"
+  axios.defaults.baseURL = "http://localhost:3000/api"
 
   return (
     <>

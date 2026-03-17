@@ -15,43 +15,35 @@ export const Login = () => {
     formState: { errors },
   } = useForm();
 
-  const onSubmit = async(data) => {
+ const onSubmit = async (data) => {
+  try {
+    const res = await axios.post("/login", data);
 
-    try{
+    if (res.status === 200) {
+      toast.success("Login Success");
 
-      const res = await axios.post("/user/login",data)
+      const user = res.data.data;
 
-      console.log("response...",res)
+      // ✅ STORE DATA
+      localStorage.setItem("userId", user._id);
+      localStorage.setItem("token", res.data.token);
 
-      if(res.status === 200){
+      const role = user.role;
 
-        toast.success("Login Success")
-
-        const role = res.data.data.role   // getting role from backend
-
-        // ROLE BASED NAVIGATION
-        if(role === "user" || role === "USER"){
-          navigate("/user")
-        }
-        else if(role === "admin" || role === "ADMIN"){
-          navigate("/admin")
-        }
-        else{
-          toast.error("Invalid role")
-          navigate("/")
-        }
-
+      if (role === "user" || role === "USER") {
+        navigate("/user");
+      } else if (role === "admin" || role === "ADMIN") {
+        navigate("/admin");
+      } else {
+        toast.error("Invalid role");
+        navigate("/");
       }
-
-    }catch(err){
-
-      console.log("error...",err)
-
-      toast.error(err.response?.data?.message || "Login failed")
-
     }
-
-  };
+  } catch (err) {
+    console.log(err);
+    toast.error(err.response?.data?.message || "Login failed");
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-green-50">
