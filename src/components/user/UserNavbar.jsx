@@ -7,73 +7,114 @@ export const UserNavbar = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("token"); // if you store token
+    localStorage.removeItem("token");
     toast.success("Logged out successfully");
     navigate("/");
   };
 
   return (
     <>
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 w-full h-16 bg-white shadow-md z-50">
-        <div className="h-full max-w-7xl mx-auto px-6 flex justify-between items-center">
+      {/* NAVBAR */}
+      <nav className="fixed top-0 left-0 w-full bg-white shadow-sm border-b z-50">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
 
-          {/* Logo */}
-          <h1 className="text-2xl font-bold text-green-600">
-            PGFinder
+          {/* LOGO */}
+          <h1 className="text-2xl font-bold">
+            PG<span className="text-blue-600">Finder</span>
           </h1>
 
-          {/* Desktop Menu */}
-          <ul className="hidden md:flex gap-6 text-gray-700 font-medium items-center">
-            <li><Link to="/user/home">Home</Link></li>
-            <li><Link to="/user/bookings">My Bookings</Link></li>
-            <li><Link to="/user/savedpgs">Saved PGs</Link></li>
+          {/* DESKTOP MENU */}
+          <ul className="hidden md:flex gap-6 items-center text-gray-700 font-medium">
 
-            {/* NEW */}
-            <li><Link to="/user/add-property" className="hover:text-green-600">Add Property</Link></li>
             <li>
-              <Link to="/user/browse" className="hover:text-green-600">
+              <Link to="/user/home" className="hover:text-blue-600 transition">
+                Home
+              </Link>
+            </li>
+
+            <li>
+              <Link to="/user/bookings" className="hover:text-blue-600 transition">
+                My Bookings
+              </Link>
+            </li>
+
+            <li>
+              <Link to="/user/savedpgs" className="hover:text-blue-600 transition">
+                Saved PGs
+              </Link>
+            </li>
+
+            <li>
+              <Link to="/user/add-property" className="hover:text-blue-600 transition">
+                Add Property
+              </Link>
+            </li>
+
+            <li>
+              <Link to="/user/browse" className="hover:text-blue-600 transition">
                 Browse PG
               </Link>
             </li>
 
-            <li><Link to="/user/profile">Profile</Link></li>
+            <li>
+              <Link to="/user/profile" className="hover:text-blue-600 transition">
+                Profile
+              </Link>
+            </li>
+
+            {/* LOGOUT BUTTON */}
             <li>
               <button
                 onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-lg"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg transition"
               >
                 Logout
               </button>
             </li>
+
           </ul>
 
-          {/* Mobile Button */}
+          {/* MOBILE BUTTON */}
           <button
             onClick={() => setOpen(!open)}
-            className="md:hidden text-2xl text-green-600"
+            className="md:hidden text-2xl text-blue-600"
           >
             ☰
           </button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* MOBILE MENU */}
         {open && (
           <div className="absolute top-16 left-0 w-full bg-white shadow-md md:hidden">
             <div className="flex flex-col gap-4 px-6 py-4 text-gray-700 font-medium">
-              <Link to="/user/home" onClick={() => setOpen(false)}>Home</Link>
-              <Link to="/user/bookings" onClick={() => setOpen(false)}>My Bookings</Link>
-              <Link to="/user/savedpgs" onClick={() => setOpen(false)}>Saved PGs</Link>
-              <Link to="/user/profile" onClick={() => setOpen(false)}>Profile</Link>
 
-              {/* NEW */}
+              <Link to="/user/home" onClick={() => setOpen(false)}>
+                Home
+              </Link>
+
+              <Link to="/user/bookings" onClick={() => setOpen(false)}>
+                My Bookings
+              </Link>
+
+              <Link to="/user/savedpgs" onClick={() => setOpen(false)}>
+                Saved PGs
+              </Link>
+
               <Link to="/user/add-property" onClick={() => setOpen(false)}>
                 Add Property
               </Link>
 
+              <Link to="/user/browse" onClick={() => setOpen(false)}>
+                Browse PG
+              </Link>
+
+              <Link to="/user/profile" onClick={() => setOpen(false)}>
+                Profile
+              </Link>
+
               <button
                 onClick={handleLogout}
-                className="bg-red-500 text-white py-2 rounded-lg"
+                className="bg-blue-600 text-white py-2 rounded-lg"
               >
                 Logout
               </button>
@@ -82,8 +123,8 @@ export const UserNavbar = () => {
         )}
       </nav>
 
-      {/* Layout Wrapper */}
-      <main className="pt-16 bg-green-50 min-h-screen">
+      {/* PAGE CONTENT */}
+      <main className="pt-16 bg-gray-50 min-h-screen">
         <Outlet />
       </main>
     </>
