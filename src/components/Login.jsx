@@ -18,7 +18,7 @@ export const Login = () => {
  const onSubmit = async (data) => {
   try {
     const res = await axios.post("/login", data);
-
+    console.log(res.data.data)
     if (res.status === 200) {
       toast.success("Login Success");
 
