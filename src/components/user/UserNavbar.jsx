@@ -18,9 +18,10 @@ export const UserNavbar = () => {
       <nav className="fixed top-0 left-0 w-full bg-white shadow-sm border-b z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
 
+
           {/* LOGO */}
-          <h1 className="text-2xl font-bold">
-            PG<span className="text-blue-600">Finder</span>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <img src="/logo.png" alt="PG Finder Logo" className="w-28 h-15" />
           </h1>
 
           {/* DESKTOP MENU */}

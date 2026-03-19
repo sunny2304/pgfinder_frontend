@@ -15,6 +15,7 @@ import MyBookings from "../components/user/MyBookings";
 // NEW
 import { AddProperty } from "../pages/AddProperty";
 import { BrowsePG } from "../pages/BrowsePG";
+import { UserFooter } from "../components/user/UserFooter";
 
 const router = createBrowserRouter([
   { path: "/", element: <Login /> },
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
       { path: "add-property", element: <AddProperty />},
       { path: "browse", element: <BrowsePG /> }
     ],
+    // element: <UserFooter/>
   },
 
   {
