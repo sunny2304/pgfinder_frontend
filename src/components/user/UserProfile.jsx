@@ -1,185 +1,105 @@
-import React from "react";
-import { UserFooter } from "./UserFooter";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom"; // <--- add this
 
 const UserProfile = () => {
+  const navigate = useNavigate(); // <--- initialize navigate
+  const [user, setUser] = useState(null);
+
+  // fetch profile data
+  const getProfile = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUser(res.data.data);
+    } catch (err) {
+      alert("Failed to load profile");
+    }
+  };
+
+  useEffect(() => {
+    getProfile();
+  }, []);
+
+  if (!user) return <h2 className="text-center mt-10">Loading...</h2>;
+
   return (
-    <div className="bg-gray-100 min-h-screen">
+    <div className="max-w-5xl mx-auto px-6 py-10">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">My Profile</h2>
 
-      {/* PROFILE SECTION */}
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">
-          My Profile
-        </h2>
+      <div className="grid md:grid-cols-3 gap-6">
 
-        <div className="grid md:grid-cols-3 gap-6">
+        {/* LEFT CARD */}
+        <div className="bg-white shadow rounded-xl p-6 text-center">
+          <img
+            src={user.profilePic || "https://via.placeholder.com/100"}
+            className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
+            alt="profile"
+          />
+          <h3 className="text-lg font-semibold">{user.firstName} {user.lastName}</h3>
+          <p className="text-gray-500 text-sm">{user.email}</p>
+          <span className="inline-block mt-3 bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs">
+            {user.role}
+          </span>
+          <p className="mt-3 text-sm">
+            Status: <span className="text-green-600 font-medium">{user.status}</span>
+          </p>
+        </div>
 
-          {/* LEFT PROFILE CARD */}
-          <div className="bg-white rounded-xl shadow p-6 text-center">
-            <div
-              className="w-24 h-24 rounded-full mx-auto mb-4 bg-cover bg-center"
-              style={{
-                backgroundImage:
-                  "url('https://randomuser.me/api/portraits/men/32.jpg')",
-              }}
-            ></div>
+        {/* RIGHT SIDE */}
+        <div className="md:col-span-2 space-y-6">
 
-            <h3 className="text-lg font-semibold">Rahul Sharma</h3>
-            <p className="text-gray-500 text-sm">
-              rahul.sharma@example.com
-            </p>
+          {/* ACCOUNT INFO */}
+          <div className="bg-white shadow rounded-xl p-6">
+            <h3 className="text-lg font-semibold mb-4">Account Details</h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-gray-500">Full Name</span><span>{user.firstName} {user.lastName}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Email</span><span>{user.email}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Role</span><span>{user.role}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Member Since</span><span>{new Date(user.createdAt).toLocaleDateString()}</span></div>
+            </div>
+          </div>
 
-            <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+          {/* QUICK STATS */}
+          <div className="bg-white shadow rounded-xl p-6">
+            <h3 className="text-lg font-semibold mb-4">Quick Info</h3>
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-500">Total Bookings</p>
+                <h2 className="text-xl font-bold text-blue-600">0</h2>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-500">Reviews Given</p>
+                <h2 className="text-xl font-bold text-green-600">0</h2>
+              </div>
+            </div>
+          </div>
+
+          {/* ACTION BUTTONS */}
+          <div className="flex gap-3">
+            {/* FIXED: Navigate to edit page */}
+            <button
+              onClick={() => navigate("/user/edit-profile")}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
               Edit Profile
+            </button>
+
+            <button
+              onClick={() => {
+                localStorage.removeItem("token");
+                window.location.href = "/";
+              }}
+              className="border border-gray-400 px-4 py-2 rounded-lg hover:bg-gray-100"
+            >
+              Logout
             </button>
           </div>
 
-          {/* RIGHT CONTENT */}
-          <div className="md:col-span-2 space-y-6">
-
-            {/* PERSONAL INFO */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="font-semibold text-lg mb-4">
-                Personal Information
-              </h3>
-
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Full Name:</span>
-                  <span>Rahul Sharma</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Email:</span>
-                  <span>rahul.sharma@example.com</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Phone:</span>
-                  <span>+91 98765 43210</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Role:</span>
-                  <span>Tenant</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Member Since:</span>
-                  <span>January 15, 2022</span>
-                </div>
-              </div>
-
-              <h3 className="font-semibold text-lg mt-6 mb-4">
-                Preferences
-              </h3>
-
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">
-                    Preferred Location:
-                  </span>
-                  <span>Delhi</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-gray-500">
-                    Budget Range:
-                  </span>
-                  <span>₹7,000 - ₹12,000/month</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-gray-500">
-                    Room Type:
-                  </span>
-                  <span>Single Occupancy</span>
-                </div>
-              </div>
-
-              {/* BUTTONS */}
-              <div className="mt-6 flex gap-3">
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                  Update Profile
-                </button>
-
-                <button className="border border-gray-400 px-4 py-2 rounded-lg hover:bg-gray-100">
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
-
-      {/* BOOKING HISTORY */}
-      <div className="bg-gray-50 py-10">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-2xl font-bold mb-6">
-            Booking History
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-6">
-
-            {/* CARD 1 */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="font-semibold">Sunshine PG</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                Stayed: 3 months
-              </p>
-              <p className="text-sm text-gray-600">
-                Amount: ₹8,500/month
-              </p>
-              <p className="text-sm text-gray-600">
-                Completed: 15 Sep 2023
-              </p>
-
-              <button className="mt-4 border border-blue-600 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-50 text-sm">
-                View Details
-              </button>
-            </div>
-
-            {/* CARD 2 */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="font-semibold">Green Valley PG</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                Stayed: 6 months
-              </p>
-              <p className="text-sm text-gray-600">
-                Amount: ₹7,200/month
-              </p>
-              <p className="text-sm text-gray-600">
-                Completed: 20 Aug 2023
-              </p>
-
-              <button className="mt-4 border border-blue-600 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-50 text-sm">
-                View Details
-              </button>
-            </div>
-
-            {/* CARD 3 */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="font-semibold">Elite Residency</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                Stayed: 1 month
-              </p>
-              <p className="text-sm text-gray-600">
-                Amount: ₹12,000/month
-              </p>
-              <p className="text-sm text-gray-600">
-                Completed: 10 Aug 2023
-              </p>
-
-              <button className="mt-4 border border-blue-600 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-50 text-sm">
-                View Details
-              </button>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      {/* FOOTER */}
-      <UserFooter />
     </div>
   );
 };

@@ -163,7 +163,7 @@ export const BrowsePG = () => {
                 <div
                   key={pg._id}
                   className="bg-white rounded-2xl shadow-md hover:shadow-xl transition duration-300 overflow-hidden cursor-pointer"
-                  onClick={() => navigate(`/property/${pg._id}`)}
+                  onClick={() => navigate(`/user/property/${pg._id}`)}
                 >
                   {/* IMAGE */}
                   <div className="h-44 w-full">
@@ -192,10 +192,10 @@ export const BrowsePG = () => {
                     </div>
 
                     <button
-                      className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+                      className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition cursor-pointer"
                       onClick={(e) => {
-                        e.stopPropagation(); // prevent card click
-                        navigate(`/property/${pg._id}`);
+                        e.stopPropagation();
+                        navigate(`/user/property/${pg._id}`);
                       }}
                     >
                       View Details

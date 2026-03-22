@@ -1,89 +1,80 @@
-// src/pages/PropertyDetails.jsx
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
-export const PropertyDetails = () => {
+const PropertyDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [pg, setPg] = useState(null);
-  const [reviews, setReviews] = useState([]);
+
+  // 🔥 Get booking status
+  const bookingStatus = location.state?.bookingStatus;
 
   useEffect(() => {
-    const fetchPG = async () => {
+    const getProperty = async () => {
       try {
         const res = await axios.get(`/properties/${id}`);
-        setPg(res.data.pg);
-        setReviews(res.data.reviews || []);
-      } catch (err) {
-        console.log(err);
+        setPg(res.data);
+      } catch (error) {
+        console.log(error);
       }
     };
-    fetchPG();
+
+    getProperty();
   }, [id]);
 
-  if (!pg) return <div className="text-center py-20">Loading...</div>;
+  if (!pg) {
+    return <div className="text-center mt-20">Loading...</div>;
+  }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-gray-50 min-h-screen">
-      {/* Back Button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="mb-4 text-blue-600 hover:underline"
-      >
-        ← Back to Browse PGs
+    <div className="max-w-4xl mx-auto p-6">
+
+      {/* BACK */}
+      <button onClick={() => navigate(-1)} className="mb-4 text-blue-600">
+        ← Back
       </button>
 
-      {/* PG Name & Price */}
-      <h1 className="text-3xl font-bold mb-2">{pg.pgName}</h1>
-      <p className="text-xl text-blue-600 font-semibold mb-4">
-        ₹{pg.rent} /month
-      </p>
+      {/* CARD */}
+      <div className="bg-white p-6 rounded-xl shadow-md border">
+        <h1 className="text-2xl font-bold">{pg.pgName}</h1>
 
-      {/* Description */}
-      <p className="text-gray-700 mb-6">{pg.description}</p>
+        <p className="text-blue-600 mt-1">₹{pg.rent} / month</p>
 
-      {/* Location & Gender & Room Type */}
-      <div className="flex flex-wrap gap-6 mb-6 text-gray-600">
-        <p>📍 {pg.area}, {pg.city}</p>
-        <p>👤 {pg.gender}</p>
-        <p>🛏 {pg.roomType} Room</p>
+        <p className="text-gray-600 mt-2">
+          📍 {pg.area}, {pg.city}
+        </p>
+
+        <div className="flex gap-4 mt-3">
+          <p>👤 {pg.gender}</p>
+          <p>🛏 {pg.roomType}</p>
+        </div>
+
+        <div className="mt-4">
+          <h2 className="font-semibold">Description</h2>
+          <p className="text-gray-600">
+            {pg.description || "No description"}
+          </p>
+        </div>
       </div>
 
-      {/* Amenities */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {pg.amenities?.map((amenity, i) => (
-          <span
-            key={i}
-            className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full"
-          >
-            {amenity}
-          </span>
-        ))}
-      </div>
-
-      {/* Reviews */}
-      <h2 className="text-2xl font-semibold mb-4">Customer Reviews</h2>
-      {reviews.length > 0 ? (
-        reviews.map((rev) => (
-          <div key={rev._id} className="border-b py-3">
-            <p className="font-semibold">{rev.userName}</p>
-            <p className="text-sm text-gray-500">{rev.comment}</p>
-            <p className="text-xs text-gray-400">Rating: {rev.rating} / 5</p>
-          </div>
-        ))
+      {/* 🔥 BUTTON LOGIC */}
+      {bookingStatus === "pending" || bookingStatus === "confirmed" ? (
+        <button className="mt-6 w-full bg-gray-400 text-white py-3 rounded-xl cursor-not-allowed">
+          Already Booked
+        </button>
       ) : (
-        <p className="text-gray-500 mb-6">No reviews yet.</p>
+        <button
+          onClick={() => navigate(`/user/book/${pg._id}`)}
+          className="mt-6 w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700"
+        >
+          Book Now
+        </button>
       )}
-
-      {/* Book Now Button */}
-      <button
-        onClick={() => navigate("/checkout")}
-        className="mt-4 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
-      >
-        Book Now
-      </button>
     </div>
   );
 };
+
+export default PropertyDetails;

@@ -156,11 +156,13 @@ export const Signup = () => {
             <input type="checkbox" required />
             <span>
               I agree to the{" "}
-              <span className="text-blue-600 cursor-pointer">
+              <span className="text-blue-600 cursor-pointer" 
+              onClick={() => navigate("/t&c")}>
                 Terms of Service
               </span>{" "}
               and{" "}
-              <span className="text-blue-600 cursor-pointer">
+              <span className="text-blue-600 cursor-pointer"
+              onClick={() => navigate("/privacypolicy")}>
                 Privacy Policy
               </span>
             </span>

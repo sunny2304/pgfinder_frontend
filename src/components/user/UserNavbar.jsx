@@ -33,27 +33,28 @@ export const UserNavbar = () => {
               </Link>
             </li>
 
-            <li>
-              <Link to="/user/bookings" className="hover:text-blue-600 transition">
-                My Bookings
-              </Link>
-            </li>
 
-            <li>
+            {/* <li>
               <Link to="/user/savedpgs" className="hover:text-blue-600 transition">
-                Saved PGs
+              Saved PGs
               </Link>
-            </li>
+              </li> */}
 
-            <li>
+            {/* <li>
               <Link to="/user/add-property" className="hover:text-blue-600 transition">
-                Add Property
+              Add Property
               </Link>
-            </li>
+              </li> */}
 
             <li>
               <Link to="/user/browse" className="hover:text-blue-600 transition">
                 Browse PG
+              </Link>
+            </li>
+
+            <li>
+              <Link to="/user/bookings" className="hover:text-blue-600 transition">
+                My Bookings
               </Link>
             </li>
 
@@ -93,20 +94,21 @@ export const UserNavbar = () => {
                 Home
               </Link>
 
-              <Link to="/user/bookings" onClick={() => setOpen(false)}>
-                My Bookings
-              </Link>
 
-              <Link to="/user/savedpgs" onClick={() => setOpen(false)}>
+              {/* <Link to="/user/savedpgs" onClick={() => setOpen(false)}>
                 Saved PGs
-              </Link>
+                </Link> */}
 
-              <Link to="/user/add-property" onClick={() => setOpen(false)}>
+              {/* <Link to="/user/add-property" onClick={() => setOpen(false)}>
                 Add Property
-              </Link>
+                </Link> */}
 
               <Link to="/user/browse" onClick={() => setOpen(false)}>
                 Browse PG
+              </Link>
+
+              <Link to="/user/bookings" onClick={() => setOpen(false)}>
+                My Bookings
               </Link>
 
               <Link to="/user/profile" onClick={() => setOpen(false)}>
