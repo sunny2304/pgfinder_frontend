@@ -6,14 +6,8 @@ export const BrowsePG = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // All PGs to display
   const [pgs, setPgs] = useState([]);
-
-  // Show/hide filters on mobile
   const [showFilters, setShowFilters] = useState(false);
-
-  // Price range from backend
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
 
   // Applied filters
   const [filters, setFilters] = useState({
@@ -24,26 +18,15 @@ export const BrowsePG = () => {
     amenities: []
   });
 
-  // Temporary filters for UI input
+  // Temporary filters for UI
   const [tempFilters, setTempFilters] = useState({ ...filters });
 
-  // Available amenities
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 0 }); // max will be dynamic
+
   const amenitiesList = ["wifi", "ac", "meals", "laundry", "gym", "parking", "security"];
 
   // =============================
-  // FETCH PRICE RANGE FROM BACKEND
-  // =============================
-  const getPriceRange = async () => {
-    try {
-      const res = await axios.get("/properties/pricerange");
-      setPriceRange({ min: res.data.minPrice, max: res.data.maxPrice });
-    } catch (err) {
-      console.log("Error fetching price range:", err);
-    }
-  };
-
-  // =============================
-  // FETCH PGs WITH APPLIED FILTERS
+  // FETCH ALL PGs (used for dynamic max price)
   // =============================
   const getAllPGs = async () => {
     try {
@@ -56,6 +39,16 @@ export const BrowsePG = () => {
 
       const res = await axios.get("/properties", { params });
       setPgs(res.data.data);
+
+      // Dynamically calculate max rent
+      if (res.data.data.length > 0) {
+        const rents = res.data.data.map(pg => pg.rent);
+        const maxRent = Math.max(...rents);
+        const minRent = Math.min(...rents);
+        setPriceRange({ min: minRent, max: maxRent });
+      } else {
+        setPriceRange({ min: 0, max: 0 });
+      }
     } catch (err) {
       console.log("Error fetching PGs:", err);
     }
@@ -65,10 +58,6 @@ export const BrowsePG = () => {
   // INITIAL LOAD
   // =============================
   useEffect(() => {
-    getPriceRange();
-  }, []);
-
-  useEffect(() => {
     getAllPGs();
   }, [filters]);
 
@@ -76,7 +65,6 @@ export const BrowsePG = () => {
   // APPLY FILTERS
   // =============================
   const handleApply = () => {
-    // Validate price inputs
     if (tempFilters.minPrice && Number(tempFilters.minPrice) < priceRange.min) {
       alert(`Min price cannot be less than ₹${priceRange.min}`);
       return;
@@ -91,7 +79,6 @@ export const BrowsePG = () => {
       return;
     }
 
-    // Apply tempFilters to actual filters
     setFilters({ ...tempFilters });
     setShowFilters(false);
   };
@@ -107,7 +94,6 @@ export const BrowsePG = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-
       {/* Mobile Filter Button */}
       <div className="md:hidden p-4">
         <button
@@ -120,9 +106,7 @@ export const BrowsePG = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-6 grid md:grid-cols-4 gap-6">
 
-        {/* ====================== */}
         {/* FILTER SIDEBAR */}
-        {/* ====================== */}
         <div className={`
           fixed md:static top-0 left-0
           w-3/4 sm:w-1/2 md:w-full
@@ -132,7 +116,6 @@ export const BrowsePG = () => {
           transform transition-transform duration-300
           ${showFilters ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
         `}>
-          {/* Mobile Close */}
           <div className="md:hidden flex justify-between mb-4">
             <h3 className="font-semibold">Filters</h3>
             <button onClick={() => setShowFilters(false)}>✖</button>
@@ -226,9 +209,7 @@ export const BrowsePG = () => {
           />
         )}
 
-        {/* ====================== */}
         {/* PG RESULTS */}
-        {/* ====================== */}
         <div className="md:col-span-3">
           <h2 className="text-2xl font-bold mb-6">Available PGs</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -239,7 +220,6 @@ export const BrowsePG = () => {
                   className="bg-white rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden cursor-pointer"
                   onClick={() => navigate(`/user/property/${pg._id}`)}
                 >
-                  {/* Image */}
                   <div className="h-44 w-full">
                     <img
                       src={pg.image || "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267"}
@@ -247,8 +227,6 @@ export const BrowsePG = () => {
                       className="w-full h-full object-cover"
                     />
                   </div>
-
-                  {/* Content */}
                   <div className="p-4">
                     <h3 className="text-lg font-semibold">{pg.pgName}</h3>
                     <p className="text-sm text-gray-500 mt-1">📍 {pg.area}, {pg.city}</p>
@@ -257,7 +235,6 @@ export const BrowsePG = () => {
                     </p>
                     <p className="text-xs text-gray-600 capitalize mt-1">👤 {pg.gender}</p>
 
-                    {/* Amenities (first 3) */}
                     <div className="flex flex-wrap gap-2 mt-3">
                       {pg.amenities?.slice(0, 3).map((item, i) => (
                         <span key={i} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">
@@ -286,7 +263,6 @@ export const BrowsePG = () => {
             )}
           </div>
         </div>
-
       </div>
     </div>
   );
