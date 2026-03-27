@@ -1,18 +1,18 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 
 import Login  from "../components/Login";
-import { Signup } from "../components/Signup";
+import Signup from "../components/Signup";
 import { UserNavbar } from "../components/user/UserNavbar";
 import { AdminSidebar } from "../components/admin/AdminSidebar";
 import LandlordDashboard from "../components/landlord/LandlordDashboard";
 
-import { UserHome } from "../components/user/UserHome";
+import UserHome  from "../components/user/UserHome";
 import UserProfile from "../components/user/UserProfile";
 import SavedPgs from "../components/user/SavedPgs";
 import MyBookings from "../components/user/MyBookings";
 
 import { AddProperty } from "../pages/AddProperty";
-import { BrowsePG } from "../pages/BrowsePG";
+import { BrowsePG }  from "../pages/BrowsePG";
 import PropertyDetails from "../pages/PropertyDetails";
 import BookPG from "../pages/BookPG"; // ✅ IMPORTANT
 import EditProfile from "../components/user/EditProfile";

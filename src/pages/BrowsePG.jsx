@@ -1,269 +1,374 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export const BrowsePG = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   const [pgs, setPgs] = useState([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Applied filters
-  const [filters, setFilters] = useState({
-    location: searchParams.get("location") || "",
-    gender: "",
-    minPrice: "",
-    maxPrice: "",
-    amenities: []
-  });
+  // filters state
+  const [location, setLocation] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [gender, setGender] = useState("");
+  const [selectedAmenities, setSelectedAmenities] = useState([]);
+  const [sortBy, setSortBy] = useState("relevance");
 
-  // Temporary filters for UI
-  const [tempFilters, setTempFilters] = useState({ ...filters });
+  const amenityList = ["wifi", "ac", "meals", "laundry", "gym", "parking", "security"];
 
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 0 }); // max will be dynamic
-
-  const amenitiesList = ["wifi", "ac", "meals", "laundry", "gym", "parking", "security"];
-
-  // =============================
-  // FETCH ALL PGs (used for dynamic max price)
-  // =============================
-  const getAllPGs = async () => {
+  // ── Fetch PGs from backend
+  const fetchPGs = async () => {
+    setLoading(true);
     try {
-      let params = {};
-      if (filters.location) params.location = filters.location;
-      if (filters.gender) params.gender = filters.gender;
-      if (filters.minPrice) params.minPrice = Number(filters.minPrice);
-      if (filters.maxPrice) params.maxPrice = Number(filters.maxPrice);
-      if (filters.amenities.length > 0) params.amenities = filters.amenities.join(",");
+      const params = {};
+      if (location) params.location = location;
+      if (gender) params.gender = gender;
+      if (minPrice) params.minPrice = minPrice;
+      if (maxPrice) params.maxPrice = maxPrice;
+      if (selectedAmenities.length > 0) params.amenities = selectedAmenities.join(",");
 
       const res = await axios.get("/properties", { params });
-      setPgs(res.data.data);
+      let data = res.data.data || [];
 
-      // Dynamically calculate max rent
-      if (res.data.data.length > 0) {
-        const rents = res.data.data.map(pg => pg.rent);
-        const maxRent = Math.max(...rents);
-        const minRent = Math.min(...rents);
-        setPriceRange({ min: minRent, max: maxRent });
-      } else {
-        setPriceRange({ min: 0, max: 0 });
-      }
+      // sort on frontend (simple)
+      if (sortBy === "low") data = [...data].sort((a, b) => a.rent - b.rent);
+      if (sortBy === "high") data = [...data].sort((a, b) => b.rent - a.rent);
+      if (sortBy === "newest") data = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      setPgs(data);
     } catch (err) {
-      console.log("Error fetching PGs:", err);
+      console.error("Error fetching PGs:", err);
     }
+    setLoading(false);
   };
 
-  // =============================
-  // INITIAL LOAD
-  // =============================
   useEffect(() => {
-    getAllPGs();
-  }, [filters]);
+    fetchPGs();
+  }, [sortBy]);
 
-  // =============================
-  // APPLY FILTERS
-  // =============================
-  const handleApply = () => {
-    if (tempFilters.minPrice && Number(tempFilters.minPrice) < priceRange.min) {
-      alert(`Min price cannot be less than ₹${priceRange.min}`);
-      return;
-    }
-    if (tempFilters.maxPrice && Number(tempFilters.maxPrice) > priceRange.max) {
-      alert(`Max price cannot exceed ₹${priceRange.max}`);
-      return;
-    }
-    if (tempFilters.minPrice && tempFilters.maxPrice &&
-        Number(tempFilters.minPrice) > Number(tempFilters.maxPrice)) {
-      alert("Min price cannot be greater than Max price");
-      return;
-    }
-
-    setFilters({ ...tempFilters });
-    setShowFilters(false);
+  // toggle amenity chip
+  const toggleAmenity = (item) => {
+    setSelectedAmenities((prev) =>
+      prev.includes(item) ? prev.filter((a) => a !== item) : [...prev, item]
+    );
   };
 
-  // =============================
-  // RESET FILTERS
-  // =============================
-  const handleReset = () => {
-    const reset = { location: "", gender: "", minPrice: "", maxPrice: "", amenities: [] };
-    setTempFilters(reset);
-    setFilters(reset);
+  // apply filters
+  const handleApply = () => {
+    fetchPGs();
+  };
+
+  // clear all filters
+  const handleClear = () => {
+    setLocation("");
+    setMinPrice("");
+    setMaxPrice("");
+    setGender("");
+    setSelectedAmenities([]);
+    setSortBy("relevance");
+    // fetch with empty params
+    setTimeout(() => fetchPGs(), 0);
+  };
+
+  // badge helper
+  const getBadge = (pg) => {
+    if (pg.verified) return { label: "Verified", color: "#1a2744" };
+    if (pg.topRated) return { label: "Top Rated", color: "#2a7c6f" };
+    return null;
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Mobile Filter Button */}
-      <div className="md:hidden p-4">
-        <button
-          onClick={() => setShowFilters(true)}
-          className="w-full bg-blue-600 text-white py-2 rounded"
-        >
-          Filters
-        </button>
-      </div>
+    <div style={{ fontFamily: "'Outfit', sans-serif", background: "#f5f2ed", minHeight: "100vh", paddingTop: 68 }}>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 grid md:grid-cols-4 gap-6">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .filter-check-label { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #3d3730; cursor: pointer; padding: 4px 0; }
+        .filter-check-label input { accent-color: #2a7c6f; width: 15px; height: 15px; }
+        .amenity-chip { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; cursor: pointer; border: 1.5px solid #e2ddd6; background: #faf9f7; color: #8a7f74; transition: all 0.2s; text-transform: capitalize; }
+        .amenity-chip.sel { border-color: #2a7c6f; background: #e8f5f3; color: #2a7c6f; }
+        .prop-card { background: #fff; border: 1px solid #e2ddd6; border-radius: 14px; overflow: hidden; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 2px 16px rgba(26,39,68,0.08); }
+        .prop-card:hover { transform: translateY(-5px); box-shadow: 0 8px 40px rgba(26,39,68,0.13); border-color: transparent; }
+        .sort-select { background: #fff; border: 1.5px solid #e2ddd6; border-radius: 9px; color: #1a2744; font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 500; padding: 9px 14px; outline: none; cursor: pointer; }
+        .sort-select:focus { border-color: #2a7c6f; }
+        .filter-input { width: 100%; background: #faf9f7; border: 1.5px solid #e2ddd6; border-radius: 9px; color: #1a1a1a; font-family: 'Outfit', sans-serif; font-size: 0.88rem; padding: 10px 13px; outline: none; transition: border-color 0.2s; }
+        .filter-input:focus { border-color: #2a7c6f; }
+      `}</style>
 
-        {/* FILTER SIDEBAR */}
-        <div className={`
-          fixed md:static top-0 left-0
-          w-3/4 sm:w-1/2 md:w-full
-          h-full md:h-fit overflow-y-auto
-          bg-white p-6 shadow-lg
-          z-[100] md:z-auto
-          transform transition-transform duration-300
-          ${showFilters ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
-        `}>
-          <div className="md:hidden flex justify-between mb-4">
-            <h3 className="font-semibold">Filters</h3>
-            <button onClick={() => setShowFilters(false)}>✖</button>
+      <div style={{ display: "flex", maxWidth: 1400, margin: "0 auto", padding: "28px 24px", gap: 24 }}>
+
+        {/* ── FILTER SIDEBAR ── */}
+        <aside style={{
+          width: 260, flexShrink: 0,
+          background: "#fff", border: "1px solid #e2ddd6",
+          borderRadius: 16, padding: "24px 20px",
+          height: "fit-content", position: "sticky", top: 88,
+          boxShadow: "0 2px 16px rgba(26,39,68,0.08)",
+        }}>
+
+          {/* Sidebar header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+            <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: "1.05rem", fontWeight: 700, color: "#1a2744" }}>
+              Filters
+            </h3>
+            <button
+              onClick={handleClear}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.8rem", color: "#2a7c6f", fontWeight: 600, fontFamily: "'Outfit', sans-serif" }}
+            >
+              Clear all
+            </button>
           </div>
 
           {/* Location */}
-          <input
-            type="text"
-            placeholder="Location"
-            value={tempFilters.location}
-            onChange={(e) => setTempFilters({ ...tempFilters, location: e.target.value })}
-            className="w-full mb-4 border px-3 py-2 rounded"
-          />
-
-          {/* Gender */}
-          <select
-            value={tempFilters.gender}
-            onChange={(e) => setTempFilters({ ...tempFilters, gender: e.target.value })}
-            className="w-full mb-4 border px-3 py-2 rounded"
-          >
-            <option value="">All Gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="unisex">Unisex</option>
-          </select>
-
-          {/* Price */}
-          <div className="mb-4">
-            <label className="text-sm">Min Price</label>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#8a7f74", marginBottom: 10 }}>
+              Location / City
+            </div>
             <input
-              type="number"
-              placeholder={`₹${priceRange.min}`}
-              value={tempFilters.minPrice}
-              onChange={(e) => setTempFilters({ ...tempFilters, minPrice: e.target.value })}
-              className="w-full border px-3 py-2 rounded mt-1"
+              className="filter-input"
+              type="text"
+              placeholder="e.g. Bengaluru, Pune..."
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
             />
           </div>
-          <div className="mb-6">
-            <label className="text-sm">Max Price</label>
-            <input
-              type="number"
-              placeholder={`₹${priceRange.max}`}
-              value={tempFilters.maxPrice}
-              onChange={(e) => setTempFilters({ ...tempFilters, maxPrice: e.target.value })}
-              className="w-full border px-3 py-2 rounded mt-1"
-            />
+
+          {/* Budget */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#8a7f74", marginBottom: 10 }}>
+              Budget Range (₹/month)
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                className="filter-input"
+                type="number"
+                placeholder="Min"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                style={{ width: "50%" }}
+              />
+              <span style={{ color: "#8a7f74", fontWeight: 600 }}>–</span>
+              <input
+                className="filter-input"
+                type="number"
+                placeholder="Max"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                style={{ width: "50%" }}
+              />
+            </div>
+          </div>
+
+          {/* Gender */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#8a7f74", marginBottom: 10 }}>
+              Gender
+            </div>
+            {[{ label: "Girls Only", val: "female" }, { label: "Boys Only", val: "male" }, { label: "Co-ed", val: "unisex" }].map((g) => (
+              <label key={g.val} className="filter-check-label">
+                <input
+                  type="radio"
+                  name="gender"
+                  checked={gender === g.val}
+                  onChange={() => setGender(g.val)}
+                  style={{ accentColor: "#2a7c6f" }}
+                />
+                {g.label}
+              </label>
+            ))}
+            {gender && (
+              <button onClick={() => setGender("")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.75rem", color: "#8a7f74", marginTop: 4, fontFamily: "'Outfit', sans-serif" }}>
+                × Clear gender
+              </button>
+            )}
           </div>
 
           {/* Amenities */}
-          <div className="mb-6">
-            <label className="text-sm font-medium">Amenities</label>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {amenitiesList.map(item => (
-                <label key={item} className="flex gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={tempFilters.amenities.includes(item)}
-                    onChange={(e) => {
-                      let updated = [...tempFilters.amenities];
-                      if (e.target.checked) updated.push(item);
-                      else updated = updated.filter(a => a !== item);
-                      setTempFilters({ ...tempFilters, amenities: updated });
-                    }}
-                  />
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#8a7f74", marginBottom: 10 }}>
+              Amenities
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+              {amenityList.map((item) => (
+                <div
+                  key={item}
+                  className={`amenity-chip ${selectedAmenities.includes(item) ? "sel" : ""}`}
+                  onClick={() => toggleAmenity(item)}
+                >
                   {item}
-                </label>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Buttons */}
+          {/* Apply Button */}
           <button
             onClick={handleApply}
-            className="w-full bg-blue-600 text-white py-2 rounded mb-2"
+            style={{
+              width: "100%", background: "#2a7c6f", color: "#fff",
+              border: "none", borderRadius: 10, padding: "12px 0",
+              fontFamily: "'Outfit', sans-serif", fontSize: "0.93rem",
+              fontWeight: 700, cursor: "pointer",
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "#1f6159"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "#2a7c6f"}
           >
             Apply Filters
           </button>
-          <button
-            onClick={handleReset}
-            className="w-full bg-gray-200 py-2 rounded"
-          >
-            Reset
-          </button>
-        </div>
+        </aside>
 
-        {/* Overlay */}
-        {showFilters && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-40 md:hidden z-[50]"
-            onClick={() => setShowFilters(false)}
-          />
-        )}
+        {/* ── LISTINGS MAIN ── */}
+        <div style={{ flex: 1 }}>
 
-        {/* PG RESULTS */}
-        <div className="md:col-span-3">
-          <h2 className="text-2xl font-bold mb-6">Available PGs</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {pgs.length > 0 ? (
-              pgs.map(pg => (
-                <div
-                  key={pg._id}
-                  className="bg-white rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden cursor-pointer"
-                  onClick={() => navigate(`/user/property/${pg._id}`)}
-                >
-                  <div className="h-44 w-full">
-                    <img
-                      src={pg.image || "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267"}
-                      alt={pg.pgName}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold">{pg.pgName}</h3>
-                    <p className="text-sm text-gray-500 mt-1">📍 {pg.area}, {pg.city}</p>
-                    <p className="text-blue-600 font-bold mt-2 text-lg">
-                      ₹{pg.rent} <span className="text-sm text-gray-500 font-normal">/month</span>
-                    </p>
-                    <p className="text-xs text-gray-600 capitalize mt-1">👤 {pg.gender}</p>
+          {/* Topbar */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: "1.7rem", fontWeight: 700, color: "#1a2744" }}>
+                {location ? `PGs in ${location}` : "Browse All PGs"}
+              </h2>
+              <p style={{ color: "#8a7f74", fontSize: "0.85rem", marginTop: 3 }}>
+                Showing {pgs.length} verified {pgs.length === 1 ? "property" : "properties"}
+              </p>
+            </div>
+            <select
+              className="sort-select"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="relevance">Sort: Relevance</option>
+              <option value="low">Price: Low to High</option>
+              <option value="high">Price: High to Low</option>
+              <option value="newest">Newest First</option>
+            </select>
+          </div>
 
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {pg.amenities?.slice(0, 3).map((item, i) => (
-                        <span key={i} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">
-                          {item}
+          {/* Loading */}
+          {loading && (
+            <div style={{ textAlign: "center", padding: "80px 0", color: "#8a7f74" }}>
+              <div style={{ fontSize: "2rem", marginBottom: 12 }}>⏳</div>
+              <p style={{ fontWeight: 500 }}>Finding the best PGs for you...</p>
+            </div>
+          )}
+
+          {/* No results */}
+          {!loading && pgs.length === 0 && (
+            <div style={{ textAlign: "center", padding: "80px 0" }}>
+              <div style={{ fontSize: "3rem", marginBottom: 16 }}>🏠</div>
+              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: "1.4rem", color: "#1a2744", marginBottom: 8 }}>
+                No PGs found
+              </h3>
+              <p style={{ color: "#8a7f74" }}>Try adjusting your filters or search a different location.</p>
+              <button
+                onClick={handleClear}
+                style={{
+                  marginTop: 20, background: "#1a2744", color: "#fff",
+                  border: "none", borderRadius: 10, padding: "11px 24px",
+                  fontFamily: "'Outfit', sans-serif", fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
+
+          {/* PG Cards Grid */}
+          {!loading && pgs.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: 22 }}>
+              {pgs.map((pg) => {
+                const badge = getBadge(pg);
+                return (
+                  <div
+                    key={pg._id}
+                    className="prop-card"
+                    onClick={() => navigate(`/user/property/${pg._id}`)}
+                  >
+                    {/* Image */}
+                    <div style={{ height: 200, position: "relative", overflow: "hidden", background: "#e8f5f3" }}>
+                      {pg.image ? (
+                        <img
+                          src={pg.image}
+                          alt={pg.pgName}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={(e) => { e.target.style.display = "none"; }}
+                        />
+                      ) : (
+                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #e8f5f3, #c8e8e3)" }}>
+                          <svg width="60" height="60" viewBox="0 0 64 64" fill="none" opacity="0.35">
+                            <path d="M10 32L32 14l22 18v20H10V32z" stroke="#2a7c6f" strokeWidth="2.5" fill="#2a7c6f" fillOpacity="0.15" />
+                          </svg>
+                        </div>
+                      )}
+                      {badge && (
+                        <span style={{
+                          position: "absolute", top: 12, left: 12,
+                          background: badge.color, color: "#fff",
+                          fontSize: "0.68rem", fontWeight: 700,
+                          padding: "4px 12px", borderRadius: 6,
+                        }}>
+                          {badge.label}
                         </span>
-                      ))}
+                      )}
                     </div>
 
-                    <button
-                      className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/user/property/${pg._id}`);
-                      }}
-                    >
-                      View Details
-                    </button>
+                    {/* Card Body */}
+                    <div style={{ padding: 20 }}>
+                      <div style={{ fontFamily: "'Fraunces', serif", fontSize: "1.08rem", fontWeight: 700, color: "#1a2744", marginBottom: 4 }}>
+                        {pg.pgName}
+                      </div>
+                      <div style={{ color: "#8a7f74", fontSize: "0.82rem", marginBottom: 12, display: "flex", alignItems: "center", gap: 5 }}>
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9z" />
+                        </svg>
+                        {pg.area}, {pg.city}
+                      </div>
+
+                      {/* Amenity tags */}
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+                        {(pg.amenities || []).slice(0, 3).map((tag) => (
+                          <span key={tag} style={{
+                            background: "#f0ede8", border: "1px solid #e2ddd6",
+                            color: "#3d3730", fontSize: "0.72rem",
+                            padding: "4px 11px", borderRadius: 20, fontWeight: 500,
+                            textTransform: "capitalize",
+                          }}>
+                            {tag}
+                          </span>
+                        ))}
+                        {pg.gender && (
+                          <span style={{
+                            background: "#eef2fb", border: "1px solid #d4e0f8",
+                            color: "#3b6bcc", fontSize: "0.72rem",
+                            padding: "4px 11px", borderRadius: 20, fontWeight: 500,
+                            textTransform: "capitalize",
+                          }}>
+                            {pg.gender}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Price + rating row */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2ddd6", paddingTop: 14 }}>
+                        <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "#1a2744" }}>
+                          ₹{pg.rent?.toLocaleString()}
+                          <span style={{ color: "#8a7f74", fontSize: "0.76rem", fontWeight: 400 }}> /month</span>
+                        </div>
+                        <div style={{ color: "#c8922a", fontSize: "0.82rem", fontWeight: 700 }}>
+                          ★ {pg.rating || "New"}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full text-center py-20">
-                <h3 className="text-xl font-semibold">No PGs found</h3>
-                <p className="text-gray-500">Try changing filters</p>
-              </div>
-            )}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
+export default BrowsePG

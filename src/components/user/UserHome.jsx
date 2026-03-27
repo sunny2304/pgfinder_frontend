@@ -1,179 +1,395 @@
-import React from "react";
-import { UserFooter } from "./UserFooter";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import axios from "axios";
 
-export const UserHome = () => {
+export default function UserHome() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [featuredPGs, setFeaturedPGs] = useState([]);
+
+  // ── Fetch logged-in user
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) { navigate("/login"); return; }
+
+    axios
+      .get("/profile", { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => setUser(res.data.data))
+      .catch(() => {
+        toast.error("Session expired. Please login again.");
+        localStorage.clear();
+        navigate("/login");
+      });
+  }, [navigate]);
+
+  // ── Fetch featured PGs (first 3 from backend)
+  useEffect(() => {
+    axios
+      .get("/properties")
+      .then((res) => {
+        const data = res.data.data || [];
+        setFeaturedPGs(data.slice(0, 3));
+      })
+      .catch((err) => console.error("Failed to load featured PGs", err));
+  }, []);
+
+  // ── Search handler
+  const [searchLocation, setSearchLocation] = useState("");
+  const [searchRoomType, setSearchRoomType] = useState("");
+  const [searchBudget, setSearchBudget] = useState("");
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchLocation) params.set("location", searchLocation);
+    if (searchBudget) params.set("budget", searchBudget);
+    navigate(`/user/browse?${params.toString()}`);
+  };
+
+  // ── Features data
+  const features = [
+    { iconBg: "#e8f5f3", iconColor: "#2a7c6f", title: "Advanced Filters", desc: "Filter by location, budget, amenities, room type and more to find the perfect match.", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg> },
+    { iconBg: "rgba(26,39,68,0.07)", iconColor: "#1a2744", title: "Verified Listings", desc: "Every property is physically verified before going live. Zero fake listings.", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22"><polyline points="20,6 9,17 4,12" /></svg> },
+    { iconBg: "#fdf6e8", iconColor: "#c8922a", title: "Secure Booking", desc: "Pay safely online. Receipts generated instantly. Refund policy backed in.", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg> },
+    { iconBg: "#eef2fb", iconColor: "#3b6bcc", title: "Direct Messaging", desc: "Chat with landlords before booking. No middlemen, no hidden fees.", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg> },
+    { iconBg: "#fdf6e8", iconColor: "#c8922a", title: "Honest Reviews", desc: "Real ratings from real tenants. Make decisions backed by verified feedback.", icon: <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg> },
+    { iconBg: "#fdf0ec", iconColor: "#e05a3a", title: "Map Search", desc: "Visually explore neighbourhoods and find PGs closest to your workplace or college.", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg> },
+  ];
+
+  const stats = [
+    { num: "12,400+", label: "Listed Properties" },
+    { num: "48,000+", label: "Happy Tenants" },
+    { num: "320+", label: "Cities Covered" },
+    { num: "98%", label: "Verified Listings" },
+  ];
+
+  const footerLinks = {
+    Tenants: ["Browse PGs", "How it works", "Reviews", "Map Search"],
+    Landlords: ["List Property", "Pricing", "Resources", "Support"],
+    Company: ["About Us", "Blog", "Careers", "Privacy & Terms"],
+  };
+
+  // badge for featured cards
+  const badgeFor = (pg, index) => {
+    if (index === 0) return { label: "Verified", color: "#1a2744" };
+    if (index === 1) return { label: "Top Rated", color: "#2a7c6f" };
+    return { label: "New", color: "#e05a3a" };
+  };
+
   return (
-    <div className="bg-gray-50">
+    <div style={{ fontFamily: "'Outfit', sans-serif", background: "#f5f2ed", minHeight: "100vh" }}>
 
-      {/* Hero Section */}
-      <section className="bg-blue-100 py-16">
-        <div className="max-w-7xl mx-auto px-6 text-center">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');
+        @keyframes heroZoom { from { transform: scale(1.07); } to { transform: scale(1.0); } }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        a { text-decoration: none; }
+        .prop-card-home { background: #fff; border: 1px solid #e2ddd6; border-radius: 14px; overflow: hidden; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 2px 16px rgba(26,39,68,0.08); }
+        .prop-card-home:hover { transform: translateY(-5px); box-shadow: 0 8px 40px rgba(26,39,68,0.13); border-color: transparent; }
+        .feat-card-home { background: #fff; border: 1px solid #e2ddd6; border-radius: 14px; padding: 30px; transition: all 0.25s ease; box-shadow: 0 2px 16px rgba(26,39,68,0.08); }
+        .feat-card-home:hover { border-color: #2a7c6f; transform: translateY(-3px); box-shadow: 0 8px 40px rgba(26,39,68,0.13); }
+        .search-input-home { width: 100%; background: #faf9f7; border: 1.5px solid #e2ddd6; border-radius: 10px; color: #1a1a1a; font-family: 'Outfit', sans-serif; font-size: 0.93rem; padding: 12px 14px; outline: none; }
+        .search-input-home:focus { border-color: #2a7c6f; box-shadow: 0 0 0 3px rgba(42,124,111,0.1); }
+      `}</style>
 
-          <h1 className="text-4xl font-bold mb-4 text-gray-900">
-            Find Your Perfect PG
+      {/* ══ NAVBAR ══ */}
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 500,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 56px", height: 68,
+        background: "rgba(255,255,255,0.93)",
+        backdropFilter: "blur(20px)",
+        borderBottom: "1px solid #e2ddd6",
+      }}>
+        {/* Logo */}
+        <div
+          onClick={() => navigate("/user/home")}
+          style={{ fontFamily: "'Fraunces', serif", fontSize: "1.55rem", fontWeight: 900, color: "#1a2744", letterSpacing: "-0.5px", cursor: "pointer" }}
+        >
+          PG<span style={{ color: "#2a7c6f" }}>Finder</span>
+        </div>
+
+        {/* Center nav links */}
+        <div style={{ display: "flex", gap: 4 }}>
+          {[
+            { label: "Home", path: "/user/home" },
+            { label: "Browse PGs", path: "/user/browse" },
+            { label: "For Landlords", path: "/landlord" },
+          ].map((link) => (
+            <button
+              key={link.label}
+              onClick={() => navigate(link.path)}
+              style={{
+                background: link.label === "Home" ? "#f0ede8" : "none",
+                border: "none", cursor: "pointer",
+                color: link.label === "Home" ? "#1a2744" : "#8a7f74",
+                fontFamily: "'Outfit', sans-serif",
+                fontSize: "0.87rem", fontWeight: 500,
+                padding: "8px 14px", borderRadius: 8,
+              }}
+            >
+              {link.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Right: browse + avatar */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => navigate("/user/browse")}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#8a7f74", fontFamily: "'Outfit', sans-serif", fontSize: "0.87rem", fontWeight: 500, padding: "8px 14px" }}
+          >
+            Browse
+          </button>
+
+          {/* Avatar → click goes to profile page */}
+          <button
+            onClick={() => navigate("/user/profile")}
+            title="My Profile"
+            style={{
+              width: 36, height: 36, borderRadius: "50%",
+              background: "#1a2744", color: "#fff",
+              border: "none", cursor: "pointer",
+              fontWeight: 700, fontSize: "0.88rem",
+              fontFamily: "'Outfit', sans-serif",
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "#243356"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "#1a2744"}
+          >
+            {user ? user.firstName[0].toUpperCase() : "P"}
+          </button>
+        </div>
+      </nav>
+
+      {/* ══ HERO ══ */}
+      <section style={{
+        minHeight: "100vh", display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        textAlign: "center", padding: "130px 24px 80px",
+        position: "relative", overflow: "hidden",
+      }}>
+        <div style={{ position: "absolute", inset: 0, zIndex: 0, backgroundImage: "url('https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1800&q=80')", backgroundSize: "cover", backgroundPosition: "center 45%", animation: "heroZoom 14s ease-out both" }} />
+        <div style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", background: "linear-gradient(to bottom, rgba(26,39,68,0.65) 0%, rgba(26,39,68,0.42) 38%, rgba(245,242,237,0) 62%, rgba(245,242,237,1) 100%)" }} />
+
+        <div style={{ position: "relative", zIndex: 2 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.4)", backdropFilter: "blur(12px)", color: "#fff", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "1.8px", textTransform: "uppercase", padding: "7px 18px", borderRadius: 40, marginBottom: 32 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff", display: "inline-block" }} />
+            India's Smartest PG Platform
+          </div>
+
+          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: "clamp(2.8rem, 7.5vw, 6rem)", fontWeight: 900, lineHeight: 1.06, letterSpacing: "-2.5px", color: "#fff", textShadow: "0 4px 32px rgba(15,15,15,0.35)" }}>
+            Find Your{" "}
+            <span style={{ color: "#7dd3c8", fontStyle: "italic" }}>Perfect</span>
+            <br />Paying Guest Stay
           </h1>
 
-          <p className="text-gray-600 mb-6">
-            Discover the best paying guest accommodations tailored to your needs and budget
+          <p style={{ maxWidth: 520, margin: "22px auto 0", color: "rgba(255,255,255,0.82)", fontSize: "1.05rem", lineHeight: 1.75, fontWeight: 300, textShadow: "0 1px 8px rgba(15,15,15,0.3)" }}>
+            Browse thousands of verified PG accommodations. Book securely, move in confidently.
           </p>
 
-          <div className="flex justify-center">
-            <div className="flex bg-white rounded-lg overflow-hidden shadow-md w-full max-w-xl">
-              <input
-                type="text"
-                placeholder="Search by location..."
-                className="flex-1 px-4 py-3 outline-none text-gray-700"
-              />
-              <button className="bg-blue-600 px-6 text-white font-semibold hover:bg-blue-700">
-                Search
-              </button>
+          {/* Search box */}
+          <div style={{ marginTop: 52, background: "rgba(255,255,255,0.97)", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 800, display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 14, alignItems: "end", boxShadow: "0 24px 80px rgba(15,15,15,0.35)" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, color: "#8a7f74", textTransform: "uppercase", letterSpacing: "1.2px", marginBottom: 8 }}>Location</label>
+              <input className="search-input-home" type="text" placeholder="e.g. Koramangala, Bengaluru" value={searchLocation} onChange={(e) => setSearchLocation(e.target.value)} />
             </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, color: "#8a7f74", textTransform: "uppercase", letterSpacing: "1.2px", marginBottom: 8 }}>Room Type</label>
+              <select className="search-input-home" value={searchRoomType} onChange={(e) => setSearchRoomType(e.target.value)} style={{ appearance: "none" }}>
+                <option>Any Type</option>
+                <option>Single Occupancy</option>
+                <option>Double Occupancy</option>
+                <option>Triple Occupancy</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, color: "#8a7f74", textTransform: "uppercase", letterSpacing: "1.2px", marginBottom: 8 }}>Budget / Month</label>
+              <select className="search-input-home" value={searchBudget} onChange={(e) => setSearchBudget(e.target.value)} style={{ appearance: "none" }}>
+                <option value="">Any Budget</option>
+                <option value="5000">Under ₹5,000</option>
+                <option value="10000">₹5k – ₹10k</option>
+                <option value="20000">₹10k – ₹20k</option>
+                <option value="99999">₹20k+</option>
+              </select>
+            </div>
+            <button
+              onClick={handleSearch}
+              style={{ background: "#1a2744", color: "#fff", border: "none", borderRadius: 10, padding: "13px 30px", fontFamily: "'Outfit', sans-serif", fontSize: "0.93rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}
+            >
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" /></svg>
+              Search
+            </button>
           </div>
 
-        </div>
-      </section>
-
-      {/* Trending Properties */}
-      <section className="py-14">
-        <div className="max-w-7xl mx-auto px-6">
-
-          <h2 className="text-2xl font-bold mb-8 text-center">
-            Trending Properties
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-6">
-
-            {/* Card 1 */}
-            <div className="bg-white rounded-xl shadow hover:shadow-lg transition">
-              <div
-                className="h-48 bg-cover bg-center rounded-t-xl"
-                style={{
-                  backgroundImage:
-                    "url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267')",
-                }}
-              ></div>
-
-              <div className="p-4">
-                <h3 className="text-lg font-semibold">Sunshine PG</h3>
-                <p className="text-blue-600 font-bold mt-1">₹8,500/month</p>
-
-                <div className="flex flex-wrap gap-2 mt-3 text-xs">
-                  <span className="bg-gray-100 px-2 py-1 rounded">WiFi</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">AC</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">Laundry</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">Meals</span>
+          {/* Stats */}
+          <div style={{ display: "flex", gap: 0, justifyContent: "center", marginTop: 68, flexWrap: "wrap", alignItems: "center" }}>
+            {stats.map((s, i) => (
+              <div key={s.label} style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ textAlign: "center", padding: "0 28px" }}>
+                  <div style={{ fontFamily: "'Fraunces', serif", fontSize: "2.5rem", fontWeight: 900, color: "#fff", textShadow: "0 2px 12px rgba(15,15,15,0.25)" }}>{s.num}</div>
+                  <div style={{ color: "rgba(255,255,255,0.72)", fontSize: "0.82rem", marginTop: 5, fontWeight: 500 }}>{s.label}</div>
                 </div>
-
-                <div className="mt-3 text-yellow-500 text-sm">
-                  ★★★★☆ <span className="text-gray-600">(4.5)</span>
-                </div>
+                {i < stats.length - 1 && <div style={{ width: 1, height: 40, background: "rgba(255,255,255,0.2)" }} />}
               </div>
-            </div>
-
-            {/* Card 2 */}
-            <div className="bg-white rounded-xl shadow hover:shadow-lg transition">
-              <div
-                className="h-48 bg-cover bg-center rounded-t-xl"
-                style={{
-                  backgroundImage:
-                    "url('https://images.unsplash.com/photo-1615529162924-f8605388463a')",
-                }}
-              ></div>
-
-              <div className="p-4">
-                <h3 className="text-lg font-semibold">Green Valley PG</h3>
-                <p className="text-blue-600 font-bold mt-1">₹7,200/month</p>
-
-                <div className="flex flex-wrap gap-2 mt-3 text-xs">
-                  <span className="bg-gray-100 px-2 py-1 rounded">WiFi</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">Gym</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">Laundry</span>
-                </div>
-
-                <div className="mt-3 text-yellow-500 text-sm">
-                  ★★★★☆ <span className="text-gray-600">(4.2)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 3 */}
-            <div className="bg-white rounded-xl shadow hover:shadow-lg transition">
-              <div
-                className="h-48 bg-cover bg-center rounded-t-xl"
-                style={{
-                  backgroundImage:
-                    "url('https://images.unsplash.com/photo-1560448204-e02f11c3d0e2')",
-                }}
-              ></div>
-
-              <div className="p-4">
-                <h3 className="text-lg font-semibold">Elite Residency</h3>
-                <p className="text-blue-600 font-bold mt-1">₹12,000/month</p>
-
-                <div className="flex flex-wrap gap-2 mt-3 text-xs">
-                  <span className="bg-gray-100 px-2 py-1 rounded">WiFi</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">AC</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">Laundry</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">Meals</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">Gym</span>
-                </div>
-
-                <div className="mt-3 text-yellow-500 text-sm">
-                  ★★★★★ <span className="text-gray-600">(4.8)</span>
-                </div>
-              </div>
-            </div>
-
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="bg-gray-100 py-14">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-
-          <h2 className="text-2xl font-bold mb-10">
-            Why Choose PG Finder?
-          </h2>
-
-          <div className="grid md:grid-cols-4 gap-6">
-
-            <div className="bg-white p-6 rounded-xl shadow">
-              <div className="text-4xl text-blue-600 mb-4">🏠</div>
-              <h3 className="font-semibold">Verified Properties</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                All properties are verified for quality and safety
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow">
-              <div className="text-4xl text-teal-500 mb-4">💰</div>
-              <h3 className="font-semibold">Best Prices</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                Competitive pricing with no hidden charges
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow">
-              <div className="text-4xl text-sky-500 mb-4">🎧</div>
-              <h3 className="font-semibold">24/7 Support</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                Round-the-clock support
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow">
-              <div className="text-4xl text-purple-500 mb-4">🔒</div>
-              <h3 className="font-semibold">Secure Booking</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                Safe and secure payment options
-              </p>
-            </div>
-
+      {/* ══ FEATURED PROPERTIES ══ */}
+      <section style={{ padding: "96px 56px", background: "#f5f2ed" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 20, marginBottom: 48 }}>
+          <div>
+            <p style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "2.5px", color: "#2a7c6f", marginBottom: 14 }}>Featured Properties</p>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: "clamp(1.9rem, 3.5vw, 2.8rem)", fontWeight: 700, color: "#1a2744", lineHeight: 1.2, marginBottom: 14 }}>
+              Handpicked Stays<br />Near You
+            </h2>
+            <p style={{ color: "#8a7f74", fontSize: "1rem", maxWidth: 460, lineHeight: 1.75 }}>Every listing is verified, every review is real.</p>
           </div>
+          {/* ── View All → navigates to BrowsePG ── */}
+          <button
+            onClick={() => navigate("/user/browse")}
+            style={{ background: "#f0ede8", border: "1px solid #e2ddd6", color: "#3d3730", borderRadius: 10, padding: "10px 20px", fontSize: "0.88rem", fontWeight: 600, cursor: "pointer", fontFamily: "'Outfit', sans-serif" }}
+          >
+            View All Properties →
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 24 }}>
+          {featuredPGs.length > 0 ? (
+            featuredPGs.map((pg, index) => {
+              const badge = badgeFor(pg, index);
+              return (
+                <div
+                  key={pg._id}
+                  className="prop-card-home"
+                  onClick={() => navigate(`/user/property/${pg._id}`)}
+                >
+                  <div style={{ height: 200, position: "relative", overflow: "hidden", background: "#e8f5f3" }}>
+                    {pg.image ? (
+                      <img src={pg.image} alt={pg.pgName} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = "none"; }} />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${index === 0 ? "#e8f5f3, #c8e8e3" : index === 1 ? "#eef2fb, #d4e0f8" : "#fdf6e8, #f5e4c0"})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="60" height="60" viewBox="0 0 64 64" fill="none" opacity="0.3">
+                          <path d="M10 32L32 14l22 18v20H10V32z" stroke="#2a7c6f" strokeWidth="2.5" fill="#2a7c6f" fillOpacity="0.15" />
+                        </svg>
+                      </div>
+                    )}
+                    <span style={{ position: "absolute", top: 14, left: 14, background: badge.color, color: "#fff", fontSize: "0.68rem", fontWeight: 700, padding: "4px 12px", borderRadius: 6 }}>
+                      {badge.label}
+                    </span>
+                  </div>
+                  <div style={{ padding: 22 }}>
+                    <div style={{ fontFamily: "'Fraunces', serif", fontSize: "1.12rem", fontWeight: 700, color: "#1a2744", marginBottom: 4 }}>{pg.pgName}</div>
+                    <div style={{ color: "#8a7f74", fontSize: "0.83rem", marginBottom: 14, display: "flex", alignItems: "center", gap: 5 }}>
+                      <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9z" /></svg>
+                      {pg.area}, {pg.city}
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                      {(pg.amenities || []).slice(0, 4).map((tag) => (
+                        <span key={tag} style={{ background: "#f0ede8", border: "1px solid #e2ddd6", color: "#3d3730", fontSize: "0.73rem", padding: "4px 11px", borderRadius: 20, fontWeight: 500, textTransform: "capitalize" }}>{tag}</span>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2ddd6", paddingTop: 16 }}>
+                      <div style={{ fontWeight: 700, fontSize: "1.12rem", color: "#1a2744" }}>₹{pg.rent?.toLocaleString()} <span style={{ color: "#8a7f74", fontSize: "0.78rem", fontWeight: 400 }}>/month</span></div>
+                      <div style={{ color: "#c8922a", fontSize: "0.83rem", fontWeight: 700 }}>★ {pg.rating || "New"}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            // fallback static cards if no backend data
+            [
+              { name: "Sunrise PG for Girls", location: "Koramangala, Bengaluru", tags: ["Wi-Fi", "Meals", "Laundry", "AC"], price: "₹7,500", rating: "4.8", badge: "Verified", badgeColor: "#1a2744", img: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=75" },
+              { name: "Urban Nest Co-Living", location: "Baner, Pune", tags: ["Wi-Fi", "Gym", "Parking"], price: "₹9,200", rating: "4.9", badge: "Top Rated", badgeColor: "#2a7c6f", img: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=75" },
+              { name: "Comfort Stay PG", location: "Andheri West, Mumbai", tags: ["Meals", "CCTV", "Single Room"], price: "₹11,000", rating: "4.6", badge: "New", badgeColor: "#e05a3a", img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&q=75" },
+            ].map((p) => (
+              <div key={p.name} className="prop-card-home" onClick={() => navigate("/user/browse")}>
+                <div style={{ height: 200, position: "relative", overflow: "hidden", background: "#f0ede8" }}>
+                  <img src={p.img} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = "none"; }} />
+                  <span style={{ position: "absolute", top: 14, left: 14, background: p.badgeColor, color: "#fff", fontSize: "0.68rem", fontWeight: 700, padding: "4px 12px", borderRadius: 6 }}>{p.badge}</span>
+                </div>
+                <div style={{ padding: 22 }}>
+                  <div style={{ fontFamily: "'Fraunces', serif", fontSize: "1.12rem", fontWeight: 700, color: "#1a2744", marginBottom: 4 }}>{p.name}</div>
+                  <div style={{ color: "#8a7f74", fontSize: "0.83rem", marginBottom: 14, display: "flex", alignItems: "center", gap: 5 }}>
+                    <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9z" /></svg>
+                    {p.location}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                    {p.tags.map((tag) => (<span key={tag} style={{ background: "#f0ede8", border: "1px solid #e2ddd6", color: "#3d3730", fontSize: "0.73rem", padding: "4px 11px", borderRadius: 20, fontWeight: 500 }}>{tag}</span>))}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2ddd6", paddingTop: 16 }}>
+                    <div style={{ fontWeight: 700, fontSize: "1.12rem", color: "#1a2744" }}>{p.price} <span style={{ color: "#8a7f74", fontSize: "0.78rem", fontWeight: 400 }}>/month</span></div>
+                    <div style={{ color: "#c8922a", fontSize: "0.83rem", fontWeight: 700 }}>★ {p.rating}</div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
-    <UserFooter/>
+
+      {/* ══ WHY PGFINDER ══ */}
+      <section style={{ padding: "96px 56px", background: "#ffffff" }}>
+        <p style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "2.5px", color: "#2a7c6f", marginBottom: 14 }}>Why PGFinder?</p>
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: "clamp(1.9rem, 3.5vw, 2.8rem)", fontWeight: 700, color: "#1a2744", lineHeight: 1.2, marginBottom: 48 }}>
+          Everything You Need,<br />Nothing You Don't
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
+          {features.map((f) => (
+            <div key={f.title} className="feat-card-home">
+              <div style={{ width: 50, height: 50, background: f.iconBg, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", color: f.iconColor, marginBottom: 18 }}>
+                {f.icon}
+              </div>
+              <div style={{ fontWeight: 700, fontSize: "0.98rem", color: "#1a2744", marginBottom: 8 }}>{f.title}</div>
+              <div style={{ color: "#8a7f74", fontSize: "0.86rem", lineHeight: 1.65 }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ══ LANDLORD CTA ══ */}
+      <div style={{ padding: "0 56px 80px" }}>
+        <div style={{ background: "#1a2744", borderRadius: 20, padding: "64px 56px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 32, flexWrap: "wrap", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 60% 80% at 90% 50%, rgba(42,124,111,0.3), transparent)" }} />
+          <div style={{ position: "relative" }}>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: "2rem", fontWeight: 700, color: "#fff", marginBottom: 8 }}>Are You a Landlord?</h2>
+            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.96rem" }}>List your property for free and reach thousands of verified tenants today.</p>
+          </div>
+          <button
+            onClick={() => navigate("/landlord")}
+            style={{ position: "relative", background: "rgba(255,255,255,0.08)", border: "2px solid rgba(255,255,255,0.3)", color: "#fff", padding: "14px 32px", borderRadius: 12, fontFamily: "'Outfit', sans-serif", fontSize: "0.96rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.25s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#1a2744"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#fff"; }}
+          >
+            Go to Landlord Dashboard →
+          </button>
+        </div>
+      </div>
+
+      {/* ══ FOOTER ══ */}
+      <footer style={{ borderTop: "1px solid #e2ddd6", padding: "40px 56px", background: "#f5f2ed" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 40, marginBottom: 32 }}>
+          <div>
+            <div style={{ fontFamily: "'Fraunces', serif", fontSize: "1.3rem", fontWeight: 900, color: "#1a2744", marginBottom: 12 }}>PG<span style={{ color: "#2a7c6f" }}>Finder</span></div>
+            <p style={{ color: "#8a7f74", fontSize: "0.85rem", lineHeight: 1.65, maxWidth: 240 }}>India's most trusted platform for finding and booking verified paying guest accommodations.</p>
+          </div>
+          {Object.entries(footerLinks).map(([heading, links]) => (
+            <div key={heading}>
+              <h4 style={{ fontWeight: 700, fontSize: "0.85rem", color: "#1a2744", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.8px" }}>{heading}</h4>
+              {links.map((l) => (<a key={l} href="#" style={{ display: "block", color: "#8a7f74", fontSize: "0.85rem", marginBottom: 10 }}>{l}</a>))}
+            </div>
+          ))}
+        </div>
+        <div style={{ borderTop: "1px solid #e2ddd6", paddingTop: 20, display: "flex", alignItems: "center", justifyContent: "space-between", color: "#8a7f74", fontSize: "0.82rem" }}>
+          <div>© 2025 PGFinder. All rights reserved.</div>
+          <div style={{ display: "flex", gap: 20 }}>
+            {["Privacy", "Terms", "Support"].map((l) => (<a key={l} href="#" style={{ color: "#8a7f74" }}>{l}</a>))}
+          </div>
+        </div>
+      </footer>
     </div>
   );
-};
+}
