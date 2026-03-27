@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 
-import { Login } from "../components/Login";
+import Login  from "../components/Login";
 import { Signup } from "../components/Signup";
 import { UserNavbar } from "../components/user/UserNavbar";
 import { AdminSidebar } from "../components/admin/AdminSidebar";
