@@ -27,7 +27,12 @@ export default function Login() {
           navigate("/user");
         } else if (role === "admin" || role === "ADMIN") {
           navigate("/admin");
-        } else {
+
+        }
+        else if (role === "landlord" || role === "LANDLORD") {
+          navigate("/landlord"); 
+        }  
+        else {
           toast.error("Invalid role");
           navigate("/");
         }
