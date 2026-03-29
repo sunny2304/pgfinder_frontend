@@ -12,10 +12,9 @@ import SavedPgs from "../components/user/SavedPgs";
 import MyBookings from "../components/user/MyBookings";
 import EditProfile from "../components/user/EditProfile";
 
-import { AddProperty } from "../pages/AddProperty";
 import { BrowsePG } from "../pages/BrowsePG";
 import PropertyDetails from "../pages/PropertyDetails";
-import BookPG from "../pages/BookPG";
+import CheckoutPage from "../pages/CheckoutPage";        // ← NEW
 import PrivacyPolicy from "../pages/PrivacyPolicy";
 import TermsAndConditions from "../pages/TermsAndConditions";
 
@@ -32,19 +31,16 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="home" replace /> },
 
       // Main pages
-      { path: "home",        element: <UserHome /> },
-      { path: "browse",      element: <BrowsePG /> },
-      { path: "bookings",    element: <MyBookings /> },
-      { path: "savedpgs",    element: <SavedPgs /> },
-      { path: "profile",     element: <UserProfile /> },
-      { path: "edit-profile",element: <EditProfile /> },
+      { path: "home",         element: <UserHome /> },
+      { path: "browse",       element: <BrowsePG /> },
+      { path: "bookings",     element: <MyBookings /> },
+      { path: "savedpgs",     element: <SavedPgs /> },
+      { path: "profile",      element: <UserProfile /> },
+      { path: "edit-profile", element: <EditProfile /> },
 
       // Property flow
       { path: "property/:id", element: <PropertyDetails /> },
-      { path: "book/:id",     element: <BookPG /> },
-
-      // Misc user pages
-      { path: "add-property", element: <AddProperty /> },
+      { path: "checkout/:id", element: <CheckoutPage /> },   // ← NEW (replaces BookPG)
     ],
   },
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import EarningsTab from "./Landlordearningstab";
 
 // ─── shared design-token CSS ───────────────────────────────────────────────
 const GLOBAL_CSS = `
@@ -183,7 +184,7 @@ export default function LandlordDashboard() {
       const all = r.data.data || [];
       const mine = all.filter(p => p.landlordId?._id === userId || p.landlordId === userId);
       setProperties(mine);
-    }).catch(() => {});
+    }).catch(() => { });
   };
 
   // ── load all bookings then filter to this landlord's properties ─────────
@@ -191,14 +192,14 @@ export default function LandlordDashboard() {
     axios.get("/bookings").then(r => {
       const all = r.data || [];
       setBookings(all);
-    }).catch(() => {});
+    }).catch(() => { });
   };
 
   // ── load payments ───────────────────────────────────────────────────────
   const loadPayments = () => {
     axios.get("/payments").then(r => {
       setPayments(r.data || []);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => { }).finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -264,11 +265,11 @@ export default function LandlordDashboard() {
 
   // ─── SIDEBAR ─────────────────────────────────────────────────────────────
   const sidebarLinks = [
-    { id: "overview",    label: "Dashboard",     section: "Overview", icon: <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/> },
-    { id: "properties",  label: "My Properties", section: null, icon: <><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></> },
-    { id: "bookings",    label: "Bookings",       section: null, badge: pendingBookings.length, icon: <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></> },
-    { id: "add",         label: "Add Property",  section: "Manage", icon: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></> },
-    { id: "earnings",    label: "Earnings",       section: "Finance", icon: <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></> },
+    { id: "overview", label: "Dashboard", section: "Overview", icon: <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" /> },
+    { id: "properties", label: "My Properties", section: null, icon: <><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9,22 9,12 15,12 15,22" /></> },
+    { id: "bookings", label: "Bookings", section: null, badge: pendingBookings.length, icon: <><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></> },
+    { id: "add", label: "Add Property", section: "Manage", icon: <><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></> },
+    { id: "earnings", label: "Earnings", section: "Finance", icon: <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></> },
   ];
 
   if (loading) return (
@@ -297,7 +298,7 @@ export default function LandlordDashboard() {
           ))}
           <div className="sl-label" style={{ marginTop: "auto" }}>Account</div>
           <button className="sl" onClick={handleLogout}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16,17 21,12 16,7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
             <span>Log Out</span>
           </button>
         </aside>
@@ -319,25 +320,25 @@ export default function LandlordDashboard() {
               {/* Stat cards */}
               <div className="stat-cards">
                 <div className="stat-card">
-                  <div className="sc-icon sci-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+                  <div className="sc-icon sci-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg></div>
                   <div className="sc-label">Total Properties</div>
                   <div className="sc-num">{properties.length}</div>
                   <div className="sc-sub">{properties.filter(p => p.available).length} active · {properties.filter(p => !p.available).length} paused</div>
                 </div>
                 <div className="stat-card">
-                  <div className="sc-icon sci-navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+                  <div className="sc-icon sci-navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /></svg></div>
                   <div className="sc-label">Active Tenants</div>
                   <div className="sc-num">{myBookings.filter(b => b.bookingStatus === "confirmed").length}</div>
                   <div className="sc-sub up">Confirmed stays</div>
                 </div>
                 <div className="stat-card">
-                  <div className="sc-icon sci-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+                  <div className="sc-icon sci-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /></svg></div>
                   <div className="sc-label">Pending Requests</div>
                   <div className="sc-num">{pendingBookings.length}</div>
                   <div className="sc-sub">Awaiting review</div>
                 </div>
                 <div className="stat-card">
-                  <div className="sc-icon sci-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+                  <div className="sc-icon sci-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg></div>
                   <div className="sc-label">Total Revenue</div>
                   <div className="sc-num" style={{ fontSize: "1.55rem" }}>₹{myRevenue.toLocaleString()}</div>
                   <div className="sc-sub up">All time</div>
@@ -559,46 +560,7 @@ export default function LandlordDashboard() {
 
           {/* ══ EARNINGS ══ */}
           {tab === "earnings" && (
-            <div>
-              <div className="topbar">
-                <div><h1>Earnings</h1><p>Track your rental income across all properties.</p></div>
-                <button className="btn btn-ghost btn-sm">Export CSV</button>
-              </div>
-
-              <div className="stat-cards">
-                {[
-                  { label: "Total Payments Received", val: `₹${payments.filter(p => p.paymentStatus === "success").reduce((s, p) => s + (p.amount || 0), 0).toLocaleString()}`, cls: "sci-gold", icon: <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></> },
-                  { label: "Pending Payouts", val: `₹${payments.filter(p => p.paymentStatus === "pending").reduce((s, p) => s + (p.amount || 0), 0).toLocaleString()}`, cls: "sci-blue", icon: <><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></> },
-                  { label: "Total Bookings", val: myBookings.length, cls: "sci-teal", icon: <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></> },
-                  { label: "Failed Payments", val: payments.filter(p => p.paymentStatus === "failed").length, cls: "sci-coral", icon: <><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></> },
-                ].map(s => (
-                  <div key={s.label} className="stat-card">
-                    <div className={`sc-icon ${s.cls}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{s.icon}</svg></div>
-                    <div className="sc-label">{s.label}</div>
-                    <div className="sc-num" style={{ fontSize: "1.5rem" }}>{s.val}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="card">
-                <div className="card-head"><h3>Payment History</h3></div>
-                <table>
-                  <thead><tr><th>Date</th><th>Booking ID</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
-                  <tbody>
-                    {payments.slice(0, 20).map(p => (
-                      <tr key={p._id}>
-                        <td style={{ color: "var(--muted)" }}>{fmt(p.createdAt)}</td>
-                        <td><strong style={{ color: "var(--navy)", fontSize: ".8rem" }}>#{p.bookingId?._id?.slice(-6)?.toUpperCase() || p._id?.slice(-6).toUpperCase()}</strong></td>
-                        <td>₹{p.amount?.toLocaleString()}</td>
-                        <td style={{ textTransform: "capitalize" }}>{p.paymentMethod}</td>
-                        <td><span className={pillClass(p.paymentStatus)}>{p.paymentStatus}</span></td>
-                      </tr>
-                    ))}
-                    {payments.length === 0 && <tr><td colSpan={5} style={{ textAlign: "center", color: "var(--muted)", padding: "24px" }}>No payments found.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <EarningsTab payments={payments} myBookings={myBookings} />
           )}
 
         </main>

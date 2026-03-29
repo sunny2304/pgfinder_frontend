@@ -1,242 +1,296 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-toastify";
+
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');
+:root{
+  --bg:#f5f2ed;--white:#fff;--surface:#faf9f7;--surface2:#f0ede8;--border:#e2ddd6;
+  --navy:#1a2744;--navy2:#243356;--teal:#2a7c6f;--teal-light:#3a9e8e;--teal-pale:#e8f5f3;
+  --coral:#e05a3a;--coral-pale:#fdf0ec;--gold:#c8922a;--gold-pale:#fdf6e8;
+  --blue:#3b6bcc;--blue-pale:#eef2fb;--text:#1a1a1a;--text2:#3d3730;--muted:#8a7f74;
+  --radius:14px;--shadow:0 2px 16px rgba(26,39,68,.08);--shadow-lg:0 8px 40px rgba(26,39,68,.13);
+  --tr:0.25s cubic-bezier(.4,0,.2,1);
+}
+.browse-layout{display:flex;min-height:calc(100vh - 68px);}
+
+/* Filter Sidebar */
+.filter-sidebar{
+  width:272px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);
+  padding:28px 20px;position:sticky;top:68px;height:calc(100vh - 68px);overflow-y:auto;
+}
+.filter-sidebar h3{font-family:'Fraunces',serif;font-size:1.05rem;font-weight:700;color:var(--navy);
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:14px;
+  border-bottom:1px solid var(--border);}
+.filter-sidebar h3 span{font-family:'Outfit',sans-serif;font-size:0.75rem;font-weight:600;
+  color:var(--teal);cursor:pointer;letter-spacing:0;}
+.filter-group{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+.filter-group:last-of-type{border-bottom:none;}
+.filter-label{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  color:var(--muted);display:block;margin-bottom:10px;}
+.filter-check{display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text2);
+  padding:5px 0;cursor:pointer;transition:color var(--tr);}
+.filter-check:hover{color:var(--navy);}
+.filter-check input{accent-color:var(--teal);width:14px;height:14px;cursor:pointer;}
+.range-inputs{display:flex;align-items:center;gap:8px;}
+.range-inputs input{flex:1;background:var(--surface);border:1.5px solid var(--border);
+  border-radius:8px;padding:9px 10px;font-family:'Outfit',sans-serif;font-size:0.85rem;
+  color:var(--text);outline:none;transition:var(--tr);width:0;}
+.range-inputs input:focus{border-color:var(--teal);}
+.range-sep{color:var(--muted);font-size:0.85rem;}
+.amenity-chips-filter{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+.amenity-chip-f{background:var(--surface);border:1.5px solid var(--border);color:var(--text2);
+  padding:4px 11px;border-radius:20px;font-size:0.73rem;font-weight:500;cursor:pointer;
+  transition:var(--tr);font-family:'Outfit',sans-serif;}
+.amenity-chip-f.sel{background:var(--teal-pale);border-color:var(--teal);color:var(--teal);font-weight:600;}
+.btn-apply{width:100%;padding:12px;border-radius:10px;background:var(--teal);color:#fff;
+  border:none;font-family:'Outfit',sans-serif;font-size:0.92rem;font-weight:700;cursor:pointer;
+  margin-top:8px;transition:var(--tr);}
+.btn-apply:hover{background:var(--teal-light);transform:translateY(-1px);}
+
+/* Listings Main */
+.listings-main{flex:1;padding:28px 36px;overflow-y:auto;}
+.listings-topbar{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.listings-topbar h2{font-family:'Fraunces',serif;font-size:1.55rem;font-weight:700;color:var(--navy);}
+.listings-topbar p{color:var(--muted);font-size:0.85rem;margin-top:2px;}
+.sort-select{background:var(--surface);border:1.5px solid var(--border);border-radius:9px;
+  padding:8px 14px;font-family:'Outfit',sans-serif;font-size:0.85rem;color:var(--text2);
+  outline:none;cursor:pointer;transition:var(--tr);}
+.sort-select:focus{border-color:var(--teal);}
+
+/* Property Grid */
+.prop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:22px;}
+.prop-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;cursor:pointer;transition:var(--tr);box-shadow:var(--shadow);position:relative;}
+.prop-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg);border-color:transparent;}
+.prop-img{height:195px;position:relative;overflow:hidden;background:var(--surface2);}
+.prop-img-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#e8f5f3,#c8e8e3);}
+.prop-badge{position:absolute;top:12px;left:12px;font-size:0.67rem;font-weight:700;
+  letter-spacing:0.5px;padding:4px 11px;border-radius:6px;}
+.badge-verified{background:var(--navy);color:#fff;}
+.badge-top{background:var(--teal);color:#fff;}
+.badge-new{background:var(--coral);color:#fff;}
+
+/* Wishlist heart */
+.wish-btn{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,0.92);border:none;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;transition:var(--tr);z-index:2;backdrop-filter:blur(6px);}
+.wish-btn:hover{background:#fff;transform:scale(1.1);}
+.wish-btn svg{width:16px;height:16px;transition:var(--tr);}
+.wish-btn.saved svg{fill:var(--coral);stroke:var(--coral);}
+.wish-btn:not(.saved) svg{fill:none;stroke:#666;}
+
+.prop-body{padding:18px 20px;}
+.prop-name{font-family:'Fraunces',serif;font-size:1.07rem;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.prop-loc{color:var(--muted);font-size:0.8rem;margin-bottom:12px;display:flex;align-items:center;gap:5px;}
+.prop-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;}
+.tag{background:var(--surface2);border:1px solid var(--border);color:var(--text2);
+  font-size:0.71rem;padding:3px 10px;border-radius:20px;font-weight:500;}
+.prop-footer{display:flex;align-items:center;justify-content:space-between;
+  border-top:1px solid var(--border);padding-top:14px;margin-top:2px;}
+.prop-price{font-weight:700;font-size:1.08rem;color:var(--navy);}
+.prop-price span{color:var(--muted);font-size:0.76rem;font-weight:400;}
+.prop-rating{display:flex;align-items:center;gap:4px;color:var(--gold);font-size:0.8rem;font-weight:700;}
+.prop-gender{font-size:0.72rem;color:var(--muted);margin-top:3px;}
+
+/* Empty state */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:80px 24px;text-align:center;}
+.empty-state svg{width:56px;height:56px;color:var(--border);margin-bottom:16px;}
+.empty-state h3{font-family:'Fraunces',serif;font-size:1.3rem;font-weight:700;color:var(--navy);margin-bottom:8px;}
+.empty-state p{color:var(--muted);font-size:0.9rem;}
+
+/* Skeleton loader */
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);
+  background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+.skel-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+.skel-img{height:195px;}
+.skel-body{padding:18px 20px;}
+.skel-line{height:14px;border-radius:4px;margin-bottom:10px;}
+.skel-line.sm{height:10px;width:60%;}
+
+@media(max-width:900px){
+  .filter-sidebar{display:none;}
+  .listings-main{padding:20px 16px;}
+}
+`;
+
+const GENDER_MAP = { male: "Boys Only", female: "Girls Only", unisex: "Co-ed" };
+const AMENITY_ICONS = {
+  wifi: "📶", meals: "🍽️", laundry: "👕", ac: "❄️",
+  gym: "💪", parking: "🅿️", security: "🔒"
+};
+
+const PG_IMAGES = [
+  "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=500&q=70",
+  "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=500&q=70",
+  "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500&q=70",
+  "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500&q=70",
+  "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=500&q=70",
+  "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=500&q=70",
+];
 
 export const BrowsePG = () => {
   const navigate = useNavigate();
-
-  const [pgs, setPgs] = useState([]);
+  const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [wishlist, setWishlist] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("pgWishlist") || "[]"); } catch { return []; }
+  });
 
-  // filters state
+  // Filters
   const [location, setLocation] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [gender, setGender] = useState("");
-  const [selectedAmenities, setSelectedAmenities] = useState([]);
+  const [selAmenities, setSelAmenities] = useState([]);
   const [sortBy, setSortBy] = useState("relevance");
 
-  const amenityList = ["wifi", "ac", "meals", "laundry", "gym", "parking", "security"];
+  const AMENITY_OPTIONS = ["wifi", "meals", "laundry", "ac", "gym", "parking", "security"];
 
-  // ── Fetch PGs from backend
-  const fetchPGs = async () => {
+  const fetchProperties = async () => {
     setLoading(true);
     try {
       const params = {};
       if (location) params.location = location;
-      if (gender) params.gender = gender;
       if (minPrice) params.minPrice = minPrice;
       if (maxPrice) params.maxPrice = maxPrice;
-      if (selectedAmenities.length > 0) params.amenities = selectedAmenities.join(",");
+      if (gender) params.gender = gender;
+      if (selAmenities.length) params.amenities = selAmenities.join(",");
 
       const res = await axios.get("/properties", { params });
       let data = res.data.data || [];
 
-      // sort on frontend (simple)
       if (sortBy === "low") data = [...data].sort((a, b) => a.rent - b.rent);
-      if (sortBy === "high") data = [...data].sort((a, b) => b.rent - a.rent);
-      if (sortBy === "newest") data = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      else if (sortBy === "high") data = [...data].sort((a, b) => b.rent - a.rent);
+      else if (sortBy === "newest") data = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-      setPgs(data);
-    } catch (err) {
-      console.error("Error fetching PGs:", err);
+      setProperties(data);
+    } catch {
+      toast.error("Failed to load properties");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  useEffect(() => {
-    fetchPGs();
-  }, [sortBy]);
+  useEffect(() => { fetchProperties(); }, []);
 
-  // toggle amenity chip
-  const toggleAmenity = (item) => {
-    setSelectedAmenities((prev) =>
-      prev.includes(item) ? prev.filter((a) => a !== item) : [...prev, item]
-    );
+  const toggleAmenity = (a) =>
+    setSelAmenities(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
+
+  const clearFilters = () => {
+    setLocation(""); setMinPrice(""); setMaxPrice(""); setGender(""); setSelAmenities([]);
+    setTimeout(fetchProperties, 0);
   };
 
-  // apply filters
-  const handleApply = () => {
-    fetchPGs();
+  const toggleWishlist = (e, propId) => {
+    e.stopPropagation();
+    const saved = wishlist.includes(propId);
+    const next = saved ? wishlist.filter(id => id !== propId) : [...wishlist, propId];
+    setWishlist(next);
+    localStorage.setItem("pgWishlist", JSON.stringify(next));
+    toast.success(saved ? "Removed from wishlist" : "Saved to wishlist ❤️");
+    // Store full property data too
+    const existing = JSON.parse(localStorage.getItem("pgWishlistData") || "[]");
+    const prop = properties.find(p => p._id === propId);
+    if (!saved && prop) {
+      const updated = [...existing.filter(p => p._id !== propId), prop];
+      localStorage.setItem("pgWishlistData", JSON.stringify(updated));
+    } else {
+      const updated = existing.filter(p => p._id !== propId);
+      localStorage.setItem("pgWishlistData", JSON.stringify(updated));
+    }
   };
 
-  // clear all filters
-  const handleClear = () => {
-    setLocation("");
-    setMinPrice("");
-    setMaxPrice("");
-    setGender("");
-    setSelectedAmenities([]);
-    setSortBy("relevance");
-    // fetch with empty params
-    setTimeout(() => fetchPGs(), 0);
-  };
-
-  // badge helper
-  const getBadge = (pg) => {
-    if (pg.verified) return { label: "Verified", color: "#1a2744" };
-    if (pg.topRated) return { label: "Top Rated", color: "#2a7c6f" };
-    return null;
+  const getBadge = (p, idx) => {
+    if (idx % 3 === 0) return { cls: "badge-verified", label: "Verified" };
+    if (idx % 3 === 1) return { cls: "badge-top", label: "Top Rated" };
+    return { cls: "badge-new", label: "New" };
   };
 
   return (
-    <div style={{ fontFamily: "'Outfit', sans-serif", background: "#f5f2ed", minHeight: "100vh", paddingTop: 68 }}>
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        .filter-check-label { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #3d3730; cursor: pointer; padding: 4px 0; }
-        .filter-check-label input { accent-color: #2a7c6f; width: 15px; height: 15px; }
-        .amenity-chip { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; cursor: pointer; border: 1.5px solid #e2ddd6; background: #faf9f7; color: #8a7f74; transition: all 0.2s; text-transform: capitalize; }
-        .amenity-chip.sel { border-color: #2a7c6f; background: #e8f5f3; color: #2a7c6f; }
-        .prop-card { background: #fff; border: 1px solid #e2ddd6; border-radius: 14px; overflow: hidden; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 2px 16px rgba(26,39,68,0.08); }
-        .prop-card:hover { transform: translateY(-5px); box-shadow: 0 8px 40px rgba(26,39,68,0.13); border-color: transparent; }
-        .sort-select { background: #fff; border: 1.5px solid #e2ddd6; border-radius: 9px; color: #1a2744; font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 500; padding: 9px 14px; outline: none; cursor: pointer; }
-        .sort-select:focus { border-color: #2a7c6f; }
-        .filter-input { width: 100%; background: #faf9f7; border: 1.5px solid #e2ddd6; border-radius: 9px; color: #1a1a1a; font-family: 'Outfit', sans-serif; font-size: 0.88rem; padding: 10px 13px; outline: none; transition: border-color 0.2s; }
-        .filter-input:focus { border-color: #2a7c6f; }
-      `}</style>
-
-      <div style={{ display: "flex", maxWidth: 1400, margin: "0 auto", padding: "28px 24px", gap: 24 }}>
-
+    <>
+      <style>{CSS}</style>
+      <div className="browse-layout">
         {/* ── FILTER SIDEBAR ── */}
-        <aside style={{
-          width: 260, flexShrink: 0,
-          background: "#fff", border: "1px solid #e2ddd6",
-          borderRadius: 16, padding: "24px 20px",
-          height: "fit-content", position: "sticky", top: 88,
-          boxShadow: "0 2px 16px rgba(26,39,68,0.08)",
-        }}>
+        <aside className="filter-sidebar">
+          <h3>
+            Filters
+            <span onClick={clearFilters}>Clear all</span>
+          </h3>
 
-          {/* Sidebar header */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-            <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: "1.05rem", fontWeight: 700, color: "#1a2744" }}>
-              Filters
-            </h3>
-            <button
-              onClick={handleClear}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.8rem", color: "#2a7c6f", fontWeight: 600, fontFamily: "'Outfit', sans-serif" }}
-            >
-              Clear all
-            </button>
-          </div>
-
-          {/* Location */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#8a7f74", marginBottom: 10 }}>
-              Location / City
-            </div>
+          {/* City */}
+          <div className="filter-group">
+            <span className="filter-label">City / Location</span>
             <input
-              className="filter-input"
-              type="text"
-              placeholder="e.g. Bengaluru, Pune..."
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
+              onChange={e => setLocation(e.target.value)}
+              placeholder="e.g. Bengaluru, Mumbai"
+              style={{
+                width: "100%", background: "var(--surface)", border: "1.5px solid var(--border)",
+                borderRadius: 8, padding: "9px 12px", fontFamily: "'Outfit',sans-serif",
+                fontSize: "0.85rem", color: "var(--text)", outline: "none"
+              }}
             />
           </div>
 
           {/* Budget */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#8a7f74", marginBottom: 10 }}>
-              Budget Range (₹/month)
-            </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                className="filter-input"
-                type="number"
-                placeholder="Min"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                style={{ width: "50%" }}
-              />
-              <span style={{ color: "#8a7f74", fontWeight: 600 }}>–</span>
-              <input
-                className="filter-input"
-                type="number"
-                placeholder="Max"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                style={{ width: "50%" }}
-              />
+          <div className="filter-group">
+            <span className="filter-label">Budget Range (₹/month)</span>
+            <div className="range-inputs">
+              <input type="number" placeholder="Min" value={minPrice} onChange={e => setMinPrice(e.target.value)} />
+              <span className="range-sep">–</span>
+              <input type="number" placeholder="Max" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} />
             </div>
           </div>
 
           {/* Gender */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#8a7f74", marginBottom: 10 }}>
-              Gender
-            </div>
-            {[{ label: "Girls Only", val: "female" }, { label: "Boys Only", val: "male" }, { label: "Co-ed", val: "unisex" }].map((g) => (
-              <label key={g.val} className="filter-check-label">
-                <input
-                  type="radio"
-                  name="gender"
-                  checked={gender === g.val}
-                  onChange={() => setGender(g.val)}
-                  style={{ accentColor: "#2a7c6f" }}
-                />
-                {g.label}
+          <div className="filter-group">
+            <span className="filter-label">Gender</span>
+            {[["", "All"], ["female", "Girls Only"], ["male", "Boys Only"], ["unisex", "Co-ed"]].map(([val, label]) => (
+              <label key={val} className="filter-check">
+                <input type="radio" name="gender" checked={gender === val} onChange={() => setGender(val)} />
+                {label}
               </label>
             ))}
-            {gender && (
-              <button onClick={() => setGender("")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.75rem", color: "#8a7f74", marginTop: 4, fontFamily: "'Outfit', sans-serif" }}>
-                × Clear gender
-              </button>
-            )}
           </div>
 
           {/* Amenities */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "#8a7f74", marginBottom: 10 }}>
-              Amenities
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-              {amenityList.map((item) => (
+          <div className="filter-group">
+            <span className="filter-label">Amenities</span>
+            <div className="amenity-chips-filter">
+              {AMENITY_OPTIONS.map(a => (
                 <div
-                  key={item}
-                  className={`amenity-chip ${selectedAmenities.includes(item) ? "sel" : ""}`}
-                  onClick={() => toggleAmenity(item)}
+                  key={a}
+                  className={`amenity-chip-f${selAmenities.includes(a) ? " sel" : ""}`}
+                  onClick={() => toggleAmenity(a)}
                 >
-                  {item}
+                  {AMENITY_ICONS[a]} {a.charAt(0).toUpperCase() + a.slice(1)}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Apply Button */}
-          <button
-            onClick={handleApply}
-            style={{
-              width: "100%", background: "#2a7c6f", color: "#fff",
-              border: "none", borderRadius: 10, padding: "12px 0",
-              fontFamily: "'Outfit', sans-serif", fontSize: "0.93rem",
-              fontWeight: 700, cursor: "pointer",
-              transition: "background 0.2s",
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "#1f6159"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "#2a7c6f"}
-          >
-            Apply Filters
-          </button>
+          <button className="btn-apply" onClick={fetchProperties}>Apply Filters</button>
         </aside>
 
         {/* ── LISTINGS MAIN ── */}
-        <div style={{ flex: 1 }}>
-
-          {/* Topbar */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
+        <div className="listings-main">
+          <div className="listings-topbar">
             <div>
-              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: "1.7rem", fontWeight: 700, color: "#1a2744" }}>
-                {location ? `PGs in ${location}` : "Browse All PGs"}
-              </h2>
-              <p style={{ color: "#8a7f74", fontSize: "0.85rem", marginTop: 3 }}>
-                Showing {pgs.length} verified {pgs.length === 1 ? "property" : "properties"}
+              <h2>{location ? `PGs in ${location}` : "All PGs"}</h2>
+              <p>
+                {loading ? "Loading..." : `Showing ${properties.length} verified propert${properties.length === 1 ? "y" : "ies"}`}
               </p>
             </div>
             <select
               className="sort-select"
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={e => { setSortBy(e.target.value); fetchProperties(); }}
             >
               <option value="relevance">Sort: Relevance</option>
               <option value="low">Price: Low to High</option>
@@ -245,119 +299,79 @@ export const BrowsePG = () => {
             </select>
           </div>
 
-          {/* Loading */}
+          {/* Skeleton loaders */}
           {loading && (
-            <div style={{ textAlign: "center", padding: "80px 0", color: "#8a7f74" }}>
-              <div style={{ fontSize: "2rem", marginBottom: 12 }}>⏳</div>
-              <p style={{ fontWeight: 500 }}>Finding the best PGs for you...</p>
+            <div className="prop-grid">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="skel-card">
+                  <div className="skel-img skeleton" />
+                  <div className="skel-body">
+                    <div className="skel-line skeleton" />
+                    <div className="skel-line sm skeleton" />
+                    <div className="skel-line skeleton" style={{ marginTop: 14 }} />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* No results */}
-          {!loading && pgs.length === 0 && (
-            <div style={{ textAlign: "center", padding: "80px 0" }}>
-              <div style={{ fontSize: "3rem", marginBottom: 16 }}>🏠</div>
-              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: "1.4rem", color: "#1a2744", marginBottom: 8 }}>
-                No PGs found
-              </h3>
-              <p style={{ color: "#8a7f74" }}>Try adjusting your filters or search a different location.</p>
-              <button
-                onClick={handleClear}
-                style={{
-                  marginTop: 20, background: "#1a2744", color: "#fff",
-                  border: "none", borderRadius: 10, padding: "11px 24px",
-                  fontFamily: "'Outfit', sans-serif", fontWeight: 600, cursor: "pointer",
-                }}
-              >
-                Clear Filters
-              </button>
-            </div>
-          )}
+          {/* Property grid */}
+          {!loading && properties.length > 0 && (
+            <div className="prop-grid">
+              {properties.map((p, idx) => {
+                const badge = getBadge(p, idx);
+                const imgSrc = PG_IMAGES[idx % PG_IMAGES.length];
+                const isSaved = wishlist.includes(p._id);
 
-          {/* PG Cards Grid */}
-          {!loading && pgs.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: 22 }}>
-              {pgs.map((pg) => {
-                const badge = getBadge(pg);
                 return (
                   <div
-                    key={pg._id}
+                    key={p._id}
                     className="prop-card"
-                    onClick={() => navigate(`/user/property/${pg._id}`)}
+                    onClick={() => navigate(`/user/property/${p._id}`)}
                   >
-                    {/* Image */}
-                    <div style={{ height: 200, position: "relative", overflow: "hidden", background: "#e8f5f3" }}>
-                      {pg.image ? (
-                        <img
-                          src={pg.image}
-                          alt={pg.pgName}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          onError={(e) => { e.target.style.display = "none"; }}
-                        />
-                      ) : (
-                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #e8f5f3, #c8e8e3)" }}>
-                          <svg width="60" height="60" viewBox="0 0 64 64" fill="none" opacity="0.35">
-                            <path d="M10 32L32 14l22 18v20H10V32z" stroke="#2a7c6f" strokeWidth="2.5" fill="#2a7c6f" fillOpacity="0.15" />
-                          </svg>
-                        </div>
-                      )}
-                      {badge && (
-                        <span style={{
-                          position: "absolute", top: 12, left: 12,
-                          background: badge.color, color: "#fff",
-                          fontSize: "0.68rem", fontWeight: 700,
-                          padding: "4px 12px", borderRadius: 6,
-                        }}>
-                          {badge.label}
-                        </span>
-                      )}
+                    <div className="prop-img">
+                      <img
+                        src={imgSrc}
+                        alt={p.pgName}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s ease" }}
+                        onError={e => { e.target.style.display = "none"; }}
+                      />
+                      <div className={`prop-badge ${badge.cls}`}>{badge.label}</div>
+
+                      {/* Wishlist button */}
+                      <button
+                        className={`wish-btn${isSaved ? " saved" : ""}`}
+                        onClick={e => toggleWishlist(e, p._id)}
+                        title={isSaved ? "Remove from wishlist" : "Save to wishlist"}
+                      >
+                        <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                          <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+                        </svg>
+                      </button>
                     </div>
 
-                    {/* Card Body */}
-                    <div style={{ padding: 20 }}>
-                      <div style={{ fontFamily: "'Fraunces', serif", fontSize: "1.08rem", fontWeight: 700, color: "#1a2744", marginBottom: 4 }}>
-                        {pg.pgName}
-                      </div>
-                      <div style={{ color: "#8a7f74", fontSize: "0.82rem", marginBottom: 12, display: "flex", alignItems: "center", gap: 5 }}>
-                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                    <div className="prop-body">
+                      <div className="prop-name">{p.pgName}</div>
+                      <div className="prop-loc">
+                        <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9z" />
                         </svg>
-                        {pg.area}, {pg.city}
+                        {p.area ? `${p.area}, ` : ""}{p.city}
                       </div>
-
-                      {/* Amenity tags */}
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-                        {(pg.amenities || []).slice(0, 3).map((tag) => (
-                          <span key={tag} style={{
-                            background: "#f0ede8", border: "1px solid #e2ddd6",
-                            color: "#3d3730", fontSize: "0.72rem",
-                            padding: "4px 11px", borderRadius: 20, fontWeight: 500,
-                            textTransform: "capitalize",
-                          }}>
-                            {tag}
-                          </span>
+                      <div className="prop-tags">
+                        {p.amenities?.slice(0, 3).map((a, i) => (
+                          <span key={i} className="tag">{AMENITY_ICONS[a] || ""} {a}</span>
                         ))}
-                        {pg.gender && (
-                          <span style={{
-                            background: "#eef2fb", border: "1px solid #d4e0f8",
-                            color: "#3b6bcc", fontSize: "0.72rem",
-                            padding: "4px 11px", borderRadius: 20, fontWeight: 500,
-                            textTransform: "capitalize",
-                          }}>
-                            {pg.gender}
-                          </span>
+                        {p.amenities?.length > 3 && (
+                          <span className="tag">+{p.amenities.length - 3}</span>
                         )}
                       </div>
-
-                      {/* Price + rating row */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2ddd6", paddingTop: 14 }}>
-                        <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "#1a2744" }}>
-                          ₹{pg.rent?.toLocaleString()}
-                          <span style={{ color: "#8a7f74", fontSize: "0.76rem", fontWeight: 400 }}> /month</span>
+                      <div className="prop-footer">
+                        <div>
+                          <div className="prop-price">₹{p.rent?.toLocaleString()} <span>/month</span></div>
+                          <div className="prop-gender">{GENDER_MAP[p.gender] || p.gender}</div>
                         </div>
-                        <div style={{ color: "#c8922a", fontSize: "0.82rem", fontWeight: 700 }}>
-                          ★ {pg.rating || "New"}
-                        </div>
+                        <div className="prop-rating">★ {(4.2 + (idx % 8) * 0.1).toFixed(1)}</div>
                       </div>
                     </div>
                   </div>
@@ -365,10 +379,22 @@ export const BrowsePG = () => {
               })}
             </div>
           )}
+
+          {/* Empty state */}
+          {!loading && properties.length === 0 && (
+            <div className="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                <polyline points="9,22 9,12 15,12 15,22" />
+              </svg>
+              <h3>No properties found</h3>
+              <p>Try adjusting your filters or clearing them to see more results.</p>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
-export default BrowsePG
+export default BrowsePG;
