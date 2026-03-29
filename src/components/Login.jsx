@@ -38,142 +38,316 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; }
 
-      {/* LEFT SIDE */}
-      <div className="hidden md:flex flex-1 bg-[#1a2744] relative overflow-hidden p-14 items-end">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=900&q=80')] bg-cover bg-center opacity-25"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1a2744] via-[#1a2744]/70 to-transparent"></div>
+        .auth-page {
+          min-height: 100vh;
+          display: flex;
+          align-items: stretch;
+          font-family: 'Outfit', sans-serif;
+        }
 
-        <div className="relative z-10 text-white">
-          <div className="text-xl font-bold mb-6">
-            PG<span className="text-teal-400">Finder</span>
-          </div>
+        /* LEFT PANEL */
+        .auth-left {
+          flex: 1;
+          background: #1a2744;
+          position: relative;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          padding: 60px;
+          min-height: 500px;
+        }
+        .auth-left::before {
+          content: '';
+          position: absolute; inset: 0;
+          background-image: url('https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=900&q=80');
+          background-size: cover; background-position: center;
+          opacity: 0.25;
+        }
+        .auth-left::after {
+          content: '';
+          position: absolute; inset: 0;
+          background: linear-gradient(to top, rgba(26,39,68,0.97) 0%, rgba(26,39,68,0.4) 70%, transparent 100%);
+        }
+        .auth-left-content {
+          position: relative; z-index: 2;
+        }
+        .auth-logo {
+          font-family: 'Fraunces', serif;
+          font-size: 1.3rem; font-weight: 900;
+          color: #fff; margin-bottom: 32px;
+          display: block;
+        }
+        .auth-logo em { color: #2a7c6f; font-style: normal; }
+        .auth-left-content h2 {
+          font-family: 'Fraunces', serif;
+          font-size: 2.4rem; font-weight: 900;
+          color: #fff; line-height: 1.15; margin-bottom: 16px;
+        }
+        .auth-left-content h2 i { color: #7dd3c8; font-style: italic; }
+        .auth-left-content p {
+          color: rgba(255,255,255,0.65); font-size: 1rem;
+          line-height: 1.7; max-width: 380px;
+        }
+        .auth-testimonial {
+          margin-top: 40px;
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 14px; padding: 22px;
+          backdrop-filter: blur(10px);
+        }
+        .auth-testimonial p {
+          color: rgba(255,255,255,0.8); font-size: 0.9rem;
+          line-height: 1.65; font-style: italic;
+        }
+        .auth-testimonial-author {
+          display: flex; align-items: center;
+          gap: 10px; margin-top: 14px;
+        }
+        .auth-testimonial-ava {
+          width: 34px; height: 34px; border-radius: 50%;
+          background: #2a7c6f;
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+        }
+        .auth-testimonial-name {
+          color: #fff; font-size: 0.84rem; font-weight: 600;
+        }
+        .auth-testimonial-role {
+          color: rgba(255,255,255,0.5); font-size: 0.75rem;
+        }
 
-          <h2 className="text-4xl font-bold leading-tight mb-4">
-            Welcome <br />
-            <span className="italic text-teal-300">back.</span>
-          </h2>
+        /* RIGHT PANEL */
+        .auth-right {
+          flex: 0 0 500px;
+          background: #fff;
+          display: flex; flex-direction: column;
+          justify-content: center;
+          padding: 64px 56px;
+          overflow-y: auto;
+        }
+        .auth-right h1 {
+          font-family: 'Fraunces', serif;
+          font-size: 2rem; font-weight: 900;
+          color: #1a2744; margin-bottom: 8px;
+        }
+        .auth-sub {
+          color: #8a7f74; font-size: 0.92rem; margin-bottom: 36px;
+        }
+        .auth-sub a { color: #2a7c6f; font-weight: 600; text-decoration: none; }
+        .auth-sub a:hover { text-decoration: underline; }
 
-          <p className="text-gray-300 max-w-md mb-8">
-            Thousands of verified PGs waiting for you. Log in and continue your search.
-          </p>
+        /* Form divider */
+        .form-divider {
+          display: flex; align-items: center; gap: 16px;
+          margin: 0 0 24px; color: #8a7f74; font-size: 0.82rem;
+        }
+        .form-divider::before, .form-divider::after {
+          content: ''; flex: 1; height: 1px; background: #e2ddd6;
+        }
 
-          <div className="bg-white/10 border border-white/20 rounded-xl p-5 backdrop-blur">
-            <p className="text-sm italic text-gray-200">
-              "Found my perfect PG within 2 days. The booking process was seamless!"
-            </p>
+        /* Form groups */
+        .form-group {
+          display: flex; flex-direction: column;
+          gap: 7px; margin-bottom: 18px;
+        }
+        .form-group label {
+          font-size: 0.72rem; font-weight: 700;
+          text-transform: uppercase; letter-spacing: 0.9px;
+          color: #8a7f74;
+        }
+        .form-input {
+          background: #faf9f7;
+          border: 1.5px solid #e2ddd6;
+          border-radius: 10px; color: #1a1a1a;
+          font-family: 'Outfit', sans-serif;
+          font-size: 0.92rem; padding: 12px 14px;
+          outline: none; width: 100%;
+          transition: all 0.25s;
+        }
+        .form-input:focus {
+          border-color: #2a7c6f;
+          box-shadow: 0 0 0 3px rgba(42,124,111,0.1);
+          background: #fff;
+        }
+        .form-input.has-icon { padding-right: 44px; }
 
-            <div className="flex items-center gap-3 mt-4">
-              <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-sm font-bold">
-                P
-              </div>
-              <div>
-                <p className="text-sm font-semibold">Priya Sharma</p>
-                <p className="text-xs text-gray-400">Tenant · Bengaluru</p>
+        /* Password wrapper */
+        .pwd-wrap {
+          position: relative;
+        }
+        .pwd-toggle {
+          position: absolute; right: 14px;
+          top: 50%; transform: translateY(-50%);
+          color: #8a7f74; cursor: pointer; background: none; border: none;
+          display: flex; align-items: center; justify-content: center;
+          transition: color 0.2s;
+        }
+        .pwd-toggle:hover { color: #1a2744; }
+
+        /* Remember row */
+        .remember-row {
+          display: flex; align-items: center;
+          justify-content: space-between; margin-bottom: 20px;
+        }
+        .remember-row label {
+          display: flex; align-items: center;
+          gap: 8px; font-size: 0.85rem; color: #3d3730; cursor: pointer;
+        }
+        .remember-row label input[type="checkbox"] {
+          accent-color: #2a7c6f; width: 15px; height: 15px; cursor: pointer;
+        }
+        .remember-row a {
+          font-size: 0.85rem; color: #2a7c6f;
+          font-weight: 600; text-decoration: none;
+        }
+        .remember-row a:hover { text-decoration: underline; }
+
+        /* Submit button */
+        .btn-submit {
+          width: 100%; padding: 14px;
+          border-radius: 12px; background: #1a2744;
+          color: #fff; border: none;
+          font-family: 'Outfit', sans-serif;
+          font-size: 1rem; font-weight: 700;
+          cursor: pointer; transition: all 0.25s;
+        }
+        .btn-submit:hover { background: #243356; transform: translateY(-1px); }
+
+        /* Bottom switch */
+        .auth-switch {
+          text-align: center; margin-top: 24px;
+          font-size: 0.88rem; color: #8a7f74;
+        }
+        .auth-switch a {
+          color: #2a7c6f; font-weight: 600; text-decoration: none;
+        }
+        .auth-switch a:hover { text-decoration: underline; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+          .auth-left { display: none; }
+          .auth-right {
+            flex: 1; padding: 48px 32px;
+          }
+        }
+        @media (max-width: 480px) {
+          .auth-right { padding: 40px 20px; }
+          .auth-right h1 { font-size: 1.7rem; }
+        }
+      `}</style>
+
+      <div className="auth-page">
+
+        {/* ── LEFT PANEL ── */}
+        <div className="auth-left">
+          <div className="auth-left-content">
+            <span className="auth-logo">PG<em>Finder</em></span>
+
+            <h2>
+              Welcome <br />
+              <i>back.</i>
+            </h2>
+
+            <p>Thousands of verified PGs waiting for you. Log in and continue your search.</p>
+
+            <div className="auth-testimonial">
+              <p>"Found my perfect PG within 2 days. The booking process was seamless!"</p>
+              <div className="auth-testimonial-author">
+                <div className="auth-testimonial-ava">P</div>
+                <div>
+                  <div className="auth-testimonial-name">Priya Sharma</div>
+                  <div className="auth-testimonial-role">Tenant · Bengaluru</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* RIGHT SIDE */}
-      <div className="w-full md:w-[500px] bg-white flex flex-col justify-center px-10 py-12">
+        {/* ── RIGHT PANEL ── */}
+        <div className="auth-right">
+          <h1>Log In</h1>
 
-        <h1 className="text-3xl font-bold text-[#1a2744] mb-2">
-          Log In
-        </h1>
+          <p className="auth-sub">
+            Don't have an account?{" "}
+            <Link to="/signup">Sign up free →</Link>
+          </p>
 
-        <p className="text-sm text-gray-500 mb-6">
-          Don't have an account?{" "}
-          <Link to="/signup" className="text-teal-600 font-semibold">
-            Sign up free →
-          </Link>
-        </p>
+          <div className="form-divider">continue with email</div>
 
-        {/* Divider */}
-        <div className="flex items-center gap-4 my-4 text-gray-400 text-sm">
-          <div className="flex-1 h-[1px] bg-gray-200"></div>
-          continue with email
-          <div className="flex-1 h-[1px] bg-gray-200"></div>
+          <form onSubmit={handleSubmit(onSubmit)}>
+
+            {/* EMAIL */}
+            <div className="form-group">
+              <label>Email Address</label>
+              <input
+                type="email"
+                placeholder="priya@email.com"
+                className="form-input"
+                {...register("email", { required: true })}
+              />
+            </div>
+
+            {/* PASSWORD */}
+            <div className="form-group">
+              <label>Password</label>
+              <div className="pwd-wrap">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Your password"
+                  className="form-input has-icon"
+                  {...register("password", { required: true })}
+                />
+                <button
+                  type="button"
+                  className="pwd-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.58 10.58A2 2 0 0013.42 13.42" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.88 5.09A9.77 9.77 0 0112 5c5 0 9 7 9 7a16.5 16.5 0 01-3.07 3.94M6.1 6.1A16.5 16.5 0 003 12s4 7 9 7a9.77 9.77 0 004.12-.91" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M1.5 12s4.5-7 10.5-7 10.5 7 10.5 7-4.5 7-10.5 7S1.5 12 1.5 12z" />
+                      <circle cx="12" cy="12" r="2.5" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* REMEMBER + FORGOT */}
+            <div className="remember-row">
+              <label>
+                <input type="checkbox" />
+                Remember me
+              </label>
+              <Link to="/forgot-password">Forgot password?</Link>
+            </div>
+
+            {/* SUBMIT */}
+            <button type="submit" className="btn-submit">
+              Log In →
+            </button>
+          </form>
+
+          <div className="auth-switch">
+            Don't have an account?{" "}
+            <Link to="/signup">Create one</Link>
+          </div>
         </div>
 
-        {/* FORM */}
-        <form onSubmit={handleSubmit(onSubmit)}>
-
-          {/* EMAIL */}
-          <div className="mb-4">
-            <label className="text-xs font-bold uppercase text-gray-500">
-              Email Address
-            </label>
-            <input
-              type="email"
-              placeholder="priya@email.com"
-              {...register("email", { required: true })}
-              className="w-full mt-2 px-4 py-3 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-400"
-            />
-          </div>
-
-          {/* PASSWORD */}
-          <div className="mb-4 relative">
-            <label className="text-xs font-bold uppercase text-gray-500">
-              Password
-            </label>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Your password"
-              {...register("password", { required: true })}
-              className="w-full mt-2 px-4 py-3 border rounded-lg bg-gray-50 pr-10 focus:outline-none focus:ring-2 focus:ring-teal-400"
-            />
-
-            {/* Eye Icon */}
-            <span
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-[38px] cursor-pointer text-gray-400 hover:text-[#1a2744] transition"
-            >
-              {showPassword ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.6">
-                  <path d="M3 3l18 18" />
-                  <path d="M10.58 10.58A2 2 0 0013.42 13.42" />
-                  <path d="M9.88 5.09A9.77 9.77 0 0112 5c5 0 9 7 9 7a16.5 16.5 0 01-3.07 3.94M6.1 6.1A16.5 16.5 0 003 12s4 7 9 7a9.77 9.77 0 004.12-.91" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.6">
-                  <path d="M1.5 12s4.5-7 10.5-7 10.5 7 10.5 7-4.5 7-10.5 7S1.5 12 1.5 12z" />
-                  <circle cx="12" cy="12" r="2.5" />
-                </svg>
-              )}
-            </span>
-          </div>
-
-          {/* REMEMBER */}
-          <div className="flex justify-between items-center mb-5 text-sm">
-            <label className="flex items-center gap-2 text-gray-600">
-              <input type="checkbox" className="accent-teal-500" />
-              Remember me
-            </label>
-
-            <Link to="/forgot-password" className="text-teal-600 font-semibold">
-              Forgot password?
-            </Link>
-          </div>
-
-          {/* BUTTON */}
-          <button
-            type="submit"
-            className="w-full bg-[#1a2744] text-white py-3 rounded-xl font-bold hover:bg-[#243356] transition"
-          >
-            Log In →
-          </button>
-        </form>
-
-        <div className="text-center mt-6 text-sm text-gray-500">
-          Don't have an account?{" "}
-          <Link to="/signup" className="text-teal-600 font-semibold">
-            Create one
-          </Link>
-        </div>
       </div>
-    </div>
+    </>
   );
 }
