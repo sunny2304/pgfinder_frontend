@@ -9,14 +9,18 @@ export const UserNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Check login status using token
+  const token = localStorage.getItem("token");
+
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    // Do not call API if user is not logged in
     if (!token) return;
+
     axios
       .get("/profile", { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setUser(res.data.data))
-      .catch(() => {});
-  }, []);
+      .catch(() => { });
+  }, [token]);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -24,13 +28,20 @@ export const UserNavbar = () => {
     navigate("/");
   };
 
-  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + "/");
+  const isActive = (path) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
+  // Show limited links for guest, full links for logged in user
   const navLinks = [
-    { label: "Home", path: "/user/home" },
-    { label: "Browse PGs", path: "/user/browse" },
-    { label: "My Bookings", path: "/user/bookings" },
-    { label: "Saved PGs", path: "/user/savedpgs" },
+    { label: "Home", path: "/" },
+    { label: "Browse PGs", path: "/browse" },
+
+    ...(token
+      ? [
+        { label: "My Bookings", path: "/bookings" },
+        { label: "Saved PGs", path: "/savedpgs" },
+      ]
+      : []),
   ];
 
   return (
@@ -99,7 +110,6 @@ export const UserNavbar = () => {
         }
         .pgf-logout-btn:hover { border-color: #1a2744; background: #f0ede8; }
 
-        /* Hamburger */
         .pgf-hamburger {
           display: none;
           flex-direction: column; gap: 5px; cursor: pointer;
@@ -110,71 +120,20 @@ export const UserNavbar = () => {
           background: #1a2744; border-radius: 2px;
           transition: all 0.3s ease;
         }
-        .pgf-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-        .pgf-hamburger.open span:nth-child(2) { opacity: 0; }
-        .pgf-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-        /* Mobile Drawer */
-        .pgf-mobile-menu {
-          position: fixed; top: 68px; left: 0; right: 0;
-          background: rgba(255,255,255,0.98);
-          backdrop-filter: blur(20px);
-          border-bottom: 1px solid #e2ddd6;
-          box-shadow: 0 8px 32px rgba(26,39,68,0.12);
-          z-index: 499;
-          padding: 16px 24px 24px;
-          display: flex; flex-direction: column; gap: 4px;
-          animation: slideDown 0.2s ease;
-        }
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .pgf-mobile-link {
-          display: flex; align-items: center; gap: 10px;
-          padding: 12px 14px; border-radius: 10px;
-          color: #3d3730; font-family: 'Outfit', sans-serif;
-          font-size: 0.93rem; font-weight: 500;
-          text-decoration: none; transition: all 0.2s;
-          border: none; background: none; cursor: pointer; width: 100%;
-          text-align: left;
-        }
-        .pgf-mobile-link:hover { background: #f0ede8; color: #1a2744; }
-        .pgf-mobile-link.active { background: #f0ede8; color: #1a2744; font-weight: 600; }
-        .pgf-mobile-divider {
-          height: 1px; background: #e2ddd6; margin: 8px 0;
-        }
-        .pgf-mobile-logout {
-          display: flex; align-items: center; gap: 10px;
-          padding: 12px 14px; border-radius: 10px;
-          color: #e05a3a; font-family: 'Outfit', sans-serif;
-          font-size: 0.93rem; font-weight: 600;
-          border: none; background: none; cursor: pointer; width: 100%;
-          text-align: left; transition: background 0.2s;
-          margin-top: 4px;
-        }
-        .pgf-mobile-logout:hover { background: #fdf0ec; }
-
-        /* Responsive */
         @media (max-width: 900px) {
           .pgf-nav { padding: 0 20px; }
           .pgf-nav-center { display: none; }
           .pgf-logout-btn { display: none; }
           .pgf-hamburger { display: flex; }
         }
-        @media (max-width: 480px) {
-          .pgf-nav { padding: 0 16px; }
-        }
       `}</style>
 
-      {/* ── NAVBAR ── */}
       <nav className="pgf-nav">
-        {/* Logo */}
-        <span className="pgf-logo" onClick={() => navigate("/user/home")}>
+        <span className="pgf-logo" onClick={() => navigate("/")}>
           PG<em>Finder</em>
         </span>
 
-        {/* Desktop center links */}
         <div className="pgf-nav-center">
           {navLinks.map((link) => (
             <Link
@@ -185,31 +144,43 @@ export const UserNavbar = () => {
               {link.label}
             </Link>
           ))}
-          <Link
-            to="/landlord"
-            className="pgf-nav-link"
-          >
-            For Landlords
-          </Link>
+
+          {/* Show landlord option only for guest users */}
+          {!token && (
+            <Link to="/landlord" className="pgf-nav-link">
+              For Landlords
+            </Link>
+          )}
         </div>
 
-        {/* Desktop right */}
         <div className="pgf-nav-right">
-          <button className="pgf-logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
-          <button
-            className="pgf-avatar"
-            onClick={() => navigate("/user/profile")}
-            title="My Profile"
-          >
-            {user ? user.firstName[0].toUpperCase() : "P"}
-          </button>
-          {/* Hamburger */}
+          {/* Show Login if not logged in, else Logout */}
+          {!token ? (
+            <button
+              className="pgf-logout-btn"
+              onClick={() => navigate("/login")}
+            >
+              Login
+            </button>
+          ) : (
+            <>
+              <button className="pgf-logout-btn" onClick={handleLogout}>
+                Logout
+              </button>
+
+              <button
+                className="pgf-avatar"
+                onClick={() => navigate("/user/profile")}
+                title="My Profile"
+              >
+                {user ? user.firstName[0].toUpperCase() : "P"}
+              </button>
+            </>
+          )}
+
           <button
             className={`pgf-hamburger${menuOpen ? " open" : ""}`}
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
           >
             <span />
             <span />
@@ -218,41 +189,57 @@ export const UserNavbar = () => {
         </div>
       </nav>
 
-      {/* ── MOBILE DRAWER ── */}
       {menuOpen && (
         <div className="pgf-mobile-menu">
           {navLinks.map((link) => (
             <Link
               key={link.label}
               to={link.path}
-              className={`pgf-mobile-link${isActive(link.path) ? " active" : ""}`}
+              className={`pgf-mobile-link${isActive(link.path) ? " active" : ""
+                }`}
               onClick={() => setMenuOpen(false)}
             >
               {link.label}
             </Link>
           ))}
-          <Link
-            to="/landlord"
-            className="pgf-mobile-link"
-            onClick={() => setMenuOpen(false)}
-          >
-            For Landlords
-          </Link>
-          <Link
-            to="/user/profile"
-            className="pgf-mobile-link"
-            onClick={() => setMenuOpen(false)}
-          >
-            My Profile
-          </Link>
+
+          {!token && (
+            <Link
+              to="/landlord"
+              className="pgf-mobile-link"
+              onClick={() => setMenuOpen(false)}
+            >
+              For Landlords
+            </Link>
+          )}
+
+          {token && (
+            <Link
+              to="/user/profile"
+              className="pgf-mobile-link"
+              onClick={() => setMenuOpen(false)}
+            >
+              My Profile
+            </Link>
+          )}
+
           <div className="pgf-mobile-divider" />
-          <button className="pgf-mobile-logout" onClick={handleLogout}>
-            Logout
-          </button>
+
+          {!token ? (
+            <button
+              className="pgf-mobile-link"
+              onClick={() => navigate("/login")}
+            >
+              Login
+            </button>
+          ) : (
+            <button className="pgf-mobile-logout" onClick={handleLogout}>
+              Logout
+            </button>
+          )}
         </div>
       )}
 
-      {/* ── PAGE CONTENT ── */}
       <main style={{ paddingTop: 68, background: "#f5f2ed", minHeight: "100vh" }}>
         <Outlet />
       </main>

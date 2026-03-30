@@ -327,7 +327,7 @@ export const BrowsePG = () => {
                   <div
                     key={p._id}
                     className="prop-card"
-                    onClick={() => navigate(`/user/property/${p._id}`)}
+                    onClick={() => navigate(`/property/${p._id}`)}
                   >
                     <div className="prop-img">
                       <img

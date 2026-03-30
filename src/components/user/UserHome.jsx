@@ -12,17 +12,13 @@ export default function UserHome() {
   // ── Fetch logged-in user
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) { navigate("/login"); return; }
+    if (!token) return;
 
     axios
       .get("/profile", { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setUser(res.data.data))
-      .catch(() => {
-        toast.error("Session expired. Please login again.");
-        localStorage.clear();
-        navigate("/login");
-      });
-  }, [navigate]);
+      .catch(() => { });
+  }, []);
 
   // ── Fetch featured PGs (first 3 from backend)
   useEffect(() => {
@@ -196,7 +192,7 @@ export default function UserHome() {
             </h2>
             <p style={{ color: "#8a7f74", fontSize: "1rem", maxWidth: 460, lineHeight: 1.75 }}>Every listing is verified, every review is real.</p>
           </div>
-          <button className="view-all-btn" onClick={() => navigate("/user/browse")}>
+          <button className="view-all-btn" onClick={() => navigate("browse")}>
             View All Properties →
           </button>
         </div>
@@ -206,7 +202,7 @@ export default function UserHome() {
             featuredPGs.map((pg, index) => {
               const badge = badgeFor(pg, index);
               return (
-                <div key={pg._id} className="prop-card-home" onClick={() => navigate(`/user/property/${pg._id}`)}>
+                <div key={pg._id} className="prop-card-home" onClick={() => navigate(`/property/${pg._id}`)}>
                   <div style={{ height: 200, position: "relative", overflow: "hidden", background: "#e8f5f3" }}>
                     {pg.image ? (
                       <img className="prop-img-inner" src={pg.image} alt={pg.pgName} onError={(e) => { e.target.style.display = "none"; }} />
@@ -247,7 +243,7 @@ export default function UserHome() {
               { name: "Urban Nest Co-Living", location: "Baner, Pune", tags: ["Wi-Fi", "Gym", "Parking"], price: "₹9,200", rating: "4.9", badge: "Top Rated", badgeColor: "#2a7c6f", img: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=75" },
               { name: "Comfort Stay PG", location: "Andheri West, Mumbai", tags: ["Meals", "CCTV", "Single Room"], price: "₹11,000", rating: "4.6", badge: "New", badgeColor: "#e05a3a", img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&q=75" },
             ].map((p) => (
-              <div key={p.name} className="prop-card-home" onClick={() => navigate("/user/browse")}>
+              <div key={p.name} className="prop-card-home" onClick={() => navigate(`/browse`)}>
                 <div style={{ height: 200, position: "relative", overflow: "hidden", background: "#f0ede8" }}>
                   <img className="prop-img-inner" src={p.img} alt={p.name} onError={(e) => { e.target.style.display = "none"; }} />
                   <span style={{ position: "absolute", top: 14, left: 14, background: p.badgeColor, color: "#fff", fontSize: "0.68rem", fontWeight: 700, padding: "4px 12px", borderRadius: 6 }}>{p.badge}</span>

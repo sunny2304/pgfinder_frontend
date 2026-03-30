@@ -24,7 +24,7 @@ export default function Login() {
         const role = user.role;
 
         if (role === "user" || role === "USER") {
-          navigate("/user");
+          navigate("/");
         } else if (role === "admin" || role === "ADMIN") {
           navigate("/admin");
 
