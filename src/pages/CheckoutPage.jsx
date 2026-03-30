@@ -3,164 +3,44 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');
-:root{
-  --bg:#f5f2ed;--white:#fff;--surface:#faf9f7;--surface2:#f0ede8;--border:#e2ddd6;
-  --navy:#1a2744;--navy2:#243356;--teal:#2a7c6f;--teal-light:#3a9e8e;--teal-pale:#e8f5f3;
-  --coral:#e05a3a;--coral-pale:#fdf0ec;--gold:#c8922a;--gold-pale:#fdf6e8;
-  --blue:#3b6bcc;--blue-pale:#eef2fb;--text:#1a1a1a;--text2:#3d3730;--muted:#8a7f74;
-  --radius:14px;--shadow:0 2px 16px rgba(26,39,68,.08);--shadow-lg:0 8px 40px rgba(26,39,68,.13);
-  --tr:0.25s cubic-bezier(.4,0,.2,1);
-}
-.checkout-page{min-height:calc(100vh - 68px);background:var(--bg);padding-bottom:80px;}
-.checkout-wrap{max-width:1020px;margin:0 auto;padding:44px 24px;}
-
-/* Steps */
-.checkout-steps{display:flex;align-items:center;margin-bottom:40px;}
-.cs-step{display:flex;align-items:center;gap:10px;flex:1;}
-.cs-circle{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-weight:700;font-size:0.83rem;flex-shrink:0;transition:var(--tr);
-  font-family:'Outfit',sans-serif;}
-.cs-circle.done{background:var(--teal);color:#fff;}
-.cs-circle.active{background:var(--navy);color:#fff;}
-.cs-circle.pending{background:var(--border);color:var(--muted);}
-.cs-label{font-size:0.8rem;font-weight:600;color:var(--muted);font-family:'Outfit',sans-serif;}
-.cs-label.active{color:var(--navy);}
-.cs-connector{flex:1;height:2px;background:var(--border);margin:0 10px;}
-.cs-connector.done{background:var(--teal);}
-
-/* Grid */
-.checkout-title{font-family:'Fraunces',serif;font-size:2rem;font-weight:900;color:var(--navy);margin-bottom:6px;}
-.checkout-sub{color:var(--muted);font-size:0.92rem;margin-bottom:36px;}
-.checkout-grid{display:grid;grid-template-columns:1fr 356px;gap:32px;align-items:start;}
-
-/* Cards */
-.checkout-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);
-  padding:28px;box-shadow:var(--shadow);margin-bottom:20px;}
-.checkout-card h3{font-family:'Fraunces',serif;font-size:1.12rem;font-weight:700;color:var(--navy);
-  margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);}
-
-/* Form */
-.form-group{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;}
-.form-group label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
-.form-input{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;
-  color:var(--text);font-family:'Outfit',sans-serif;font-size:0.92rem;padding:12px 14px;
-  outline:none;width:100%;transition:var(--tr);}
-.form-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(42,124,111,0.1);background:var(--white);}
-.form-input.error{border-color:var(--coral);}
-.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-
-/* Payment Methods */
-.pay-methods{display:flex;gap:10px;margin-bottom:20px;}
-.pay-method{border:1.5px solid var(--border);border-radius:10px;padding:12px 18px;cursor:pointer;
-  transition:var(--tr);display:flex;align-items:center;gap:8px;font-size:0.84rem;font-weight:600;
-  color:var(--text2);background:var(--surface);font-family:'Outfit',sans-serif;}
-.pay-method:hover{border-color:var(--navy);}
-.pay-method.active{border-color:var(--teal);background:var(--teal-pale);color:var(--teal);}
-
-/* Order Summary */
-.order-summary-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);
-  padding:24px;box-shadow:var(--shadow);position:sticky;top:88px;}
-.order-summary-card h3{font-family:'Fraunces',serif;font-size:1.05rem;font-weight:700;color:var(--navy);margin-bottom:18px;}
-.order-prop-img{width:100%;height:136px;object-fit:cover;border-radius:10px;margin-bottom:14px;background:var(--surface2);}
-.order-prop-name{font-weight:700;color:var(--navy);font-size:0.93rem;margin-bottom:4px;font-family:'Fraunces',serif;}
-.order-prop-loc{color:var(--muted);font-size:0.8rem;margin-bottom:16px;font-family:'Outfit',sans-serif;}
-.order-line{display:flex;justify-content:space-between;font-size:0.86rem;padding:8px 0;
-  border-bottom:1px solid var(--border);color:var(--text2);font-family:'Outfit',sans-serif;}
-.order-line:last-child{border-bottom:none;font-weight:700;color:var(--navy);font-size:0.96rem;padding-top:12px;}
-.order-line.deduct{color:var(--teal);}
-
-/* Buttons */
-.btn-pay{width:100%;padding:15px;border-radius:12px;background:var(--navy);color:#fff;
-  border:none;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;
-  margin-top:8px;transition:var(--tr);display:flex;align-items:center;justify-content:center;gap:8px;}
-.btn-pay:hover:not(:disabled){background:var(--navy2);transform:translateY(-1px);}
-.btn-pay:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
-.btn-pay.teal{background:var(--teal);}
-.btn-pay.teal:hover:not(:disabled){background:var(--teal-light);}
-.secure-row{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:0.77rem;
-  margin-top:12px;padding:9px;background:var(--surface);border-radius:8px;font-family:'Outfit',sans-serif;}
-.secure-row svg{color:var(--teal);width:13px;height:13px;}
-
-/* Success Screen */
-.success-screen{text-align:center;padding:60px 24px;animation:fadeUp 0.5s ease both;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-.success-icon{width:84px;height:84px;border-radius:50%;background:var(--teal-pale);
-  border:3px solid var(--teal);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;}
-.success-icon svg{width:38px;height:38px;color:var(--teal);}
-.success-screen h2{font-family:'Fraunces',serif;font-size:2.2rem;font-weight:900;color:var(--navy);margin-bottom:10px;}
-.success-screen p{color:var(--muted);font-size:0.97rem;max-width:480px;margin:0 auto 32px;line-height:1.75;}
-.booking-ref{background:var(--teal-pale);border:1.5px solid rgba(42,124,111,0.3);border-radius:14px;
-  padding:18px 32px;display:inline-block;margin-bottom:36px;}
-.booking-ref span{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
-  color:var(--teal);display:block;margin-bottom:4px;font-family:'Outfit',sans-serif;}
-.booking-ref strong{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:900;color:var(--navy);}
-.success-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
-.btn-action{padding:12px 28px;border-radius:11px;font-family:'Outfit',sans-serif;font-size:0.93rem;
-  font-weight:700;cursor:pointer;transition:var(--tr);border:none;}
-.btn-action:hover{transform:translateY(-1px);}
-.btn-action.navy{background:var(--navy);color:#fff;}
-.btn-action.ghost{background:var(--surface2);color:var(--text2);}
-.next-steps{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);
-  padding:24px;max-width:500px;margin:40px auto 0;text-align:left;}
-.next-steps h4{font-family:'Fraunces',serif;color:var(--navy);margin-bottom:16px;font-size:1rem;}
-.next-step-item{display:flex;gap:12px;font-size:0.87rem;color:var(--text2);margin-bottom:12px;
-  font-family:'Outfit',sans-serif;line-height:1.6;}
-.step-num{width:26px;height:26px;border-radius:50%;background:var(--teal);color:#fff;
-  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0;}
-
-/* Spinner */
-.spin{width:20px;height:20px;border:3px solid rgba(255,255,255,0.3);border-top-color:#fff;
-  border-radius:50%;animation:spin 0.7s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-
-@media(max-width:800px){
-  .checkout-grid{grid-template-columns:1fr;}
-  .order-summary-card{position:static;}
-  .form-grid-2{grid-template-columns:1fr;}
-  .pay-methods{flex-wrap:wrap;}
-}
-`;
-
 const PG_IMAGES = [
   "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=70",
   "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=70",
 ];
 
-const PLATFORM_FEE_PCT = 5; // 5% platform fee from landlord
+const PLATFORM_FEE_PCT = 5;
+
+const inputCls = "w-full bg-[#faf9f7] border-[1.5px] border-[#e2ddd6] rounded-[10px] text-[#1a1a1a] text-[0.92rem] py-3 px-3.5 outline-none transition-all duration-300 focus:border-[#2a7c6f] focus:shadow-[0_0_0_3px_rgba(42,124,111,0.1)] focus:bg-white";
+const labelCls = "block text-[0.7rem] font-bold uppercase tracking-[1px] text-[#8a7f74] mb-1.5";
 
 const CheckoutPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { state } = useLocation();
 
-  const [step, setStep] = useState(1); // 1: booking details, 2: payment, 3: success
+  const [step, setStep] = useState(1);
   const [paying, setPaying] = useState(false);
   const [bookingId, setBookingId] = useState(null);
   const [refCode, setRefCode] = useState("");
 
-  // Card form
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
 
   const userId = localStorage.getItem("userId");
-
   const { checkInDate, checkOutDate, roomType, months, property } = state || {};
 
   if (!property) {
     return (
-      <>
-        <style>{CSS}</style>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", fontFamily: "'Outfit',sans-serif" }}>
-          <div style={{ textAlign: "center" }}>
-            <h3 style={{ fontFamily: "'Fraunces',serif", color: "var(--navy)" }}>No booking data found</h3>
-            <button onClick={() => navigate("/user/browse")} style={{ marginTop: 16, padding: "10px 24px", background: "var(--teal)", color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "'Outfit',sans-serif", fontWeight: 700 }}>Browse PGs</button>
-          </div>
+      <div className="min-h-[60vh] flex items-center justify-center" style={{ fontFamily: "'Outfit',sans-serif" }}>
+        <div className="text-center">
+          <h3 className="text-[1.2rem] font-bold text-[#1a2744] mb-4" style={{ fontFamily: "'Fraunces',serif" }}>No booking data found</h3>
+          <button onClick={() => navigate("/user/browse")} className="mt-4 py-2.5 px-6 bg-[#2a7c6f] text-white border-none rounded-[10px] cursor-pointer font-bold text-[0.9rem]" style={{ fontFamily: "'Outfit',sans-serif" }}>
+            Browse PGs
+          </button>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -176,11 +56,9 @@ const CheckoutPage = () => {
   const handleConfirmBooking = async () => {
     try {
       const res = await axios.post(`/users/${userId}/properties/${id}/bookings`, {
-        checkInDate, checkOutDate, roomType,
-        gender: property.gender,
+        checkInDate, checkOutDate, roomType, gender: property.gender,
       });
-      const bId = res.data.data._id;
-      setBookingId(bId);
+      setBookingId(res.data.data._id);
       setStep(2);
     } catch (err) {
       toast.error(err.response?.data?.message || "Booking failed. Try again.");
@@ -192,57 +70,49 @@ const CheckoutPage = () => {
       toast.error("Please fill in all card details correctly");
       return;
     }
-
     setPaying(true);
     try {
-      // Simulate card processing delay
       await new Promise(r => setTimeout(r, 1800));
-
-      // Create payment record
       await axios.post(`/bookings/${bookingId}/payments`, {
-        userId,
-        amount: totalRent,
-        paymentMethod: "card",
-        paymentStatus: "success",
-        landlordAmount,
-        platformFee,
+        userId, amount: totalRent, paymentMethod: "card",
+        paymentStatus: "success", landlordAmount, platformFee,
       });
-
-      // Update booking status to confirmed
       await axios.patch(`/bookings/${bookingId}/status`, { status: "confirmed" });
-
       const code = "PGF-" + Date.now().toString().slice(-8).toUpperCase();
       setRefCode(code);
       setStep(3);
       toast.success("Payment successful! 🎉");
-    } catch (err) {
+    } catch {
       toast.error("Payment failed. Please try again.");
     } finally {
       setPaying(false);
     }
   };
 
-  const steps = [
-    { label: "Booking Details" },
-    { label: "Payment" },
-    { label: "Confirmation" },
-  ];
+  const steps = ["Booking Details", "Payment", "Confirmation"];
 
   return (
     <>
-      <style>{CSS}</style>
-      <div className="checkout-page">
-        <div className="checkout-wrap">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');
+        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .checkout-spinner { width:20px; height:20px; border:3px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; }
+        .checkout-animate { animation: fadeUp 0.5s ease both; }
+      `}</style>
 
-          {/* Steps */}
-          <div className="checkout-steps">
+      <div className="min-h-[calc(100vh-68px)] bg-[#f5f2ed] pb-20" style={{ fontFamily: "'Outfit',sans-serif" }}>
+        <div className="max-w-[1020px] mx-auto px-6 pt-11">
+
+          {/* ── STEPS ── */}
+          <div className="flex items-center mb-10">
             {steps.map((s, i) => (
-              <div key={i} className="cs-step" style={{ flex: i < steps.length - 1 ? "1" : "none" }}>
-                <div className={`cs-circle ${step > i + 1 ? "done" : step === i + 1 ? "active" : "pending"}`}>
+              <div key={i} className="flex items-center" style={{ flex: i < steps.length - 1 ? 1 : "none" }}>
+                <div className={`w-[34px] h-[34px] rounded-full flex items-center justify-center font-bold text-[0.83rem] flex-shrink-0 transition-all duration-300 ${step > i + 1 ? "bg-[#2a7c6f] text-white" : step === i + 1 ? "bg-[#1a2744] text-white" : "bg-[#e2ddd6] text-[#8a7f74]"}`}>
                   {step > i + 1 ? "✓" : i + 1}
                 </div>
-                <span className={`cs-label ${step === i + 1 ? "active" : ""}`}>{s.label}</span>
-                {i < steps.length - 1 && <div className={`cs-connector${step > i + 1 ? " done" : ""}`} />}
+                <span className={`ml-2.5 text-[0.8rem] font-semibold ${step === i + 1 ? "text-[#1a2744]" : "text-[#8a7f74]"}`}>{s}</span>
+                {i < steps.length - 1 && <div className={`flex-1 h-[2px] mx-2.5 ${step > i + 1 ? "bg-[#2a7c6f]" : "bg-[#e2ddd6]"}`} />}
               </div>
             ))}
           </div>
@@ -250,55 +120,49 @@ const CheckoutPage = () => {
           {/* ══ STEP 1: BOOKING DETAILS ══ */}
           {step === 1 && (
             <>
-              <div className="checkout-title">Review Your Booking</div>
-              <div className="checkout-sub">Double-check your dates and details before proceeding.</div>
+              <h1 className="text-[2rem] font-black text-[#1a2744] mb-1.5" style={{ fontFamily: "'Fraunces',serif" }}>Review Your Booking</h1>
+              <p className="text-[#8a7f74] text-[0.92rem] mb-9">Double-check your dates and details before proceeding.</p>
 
-              <div className="checkout-grid">
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_356px] gap-8 items-start">
                 <div>
-                  <div className="checkout-card">
-                    <h3>Booking Details</h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: "'Outfit',sans-serif" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--text2)" }}>
-                        <span style={{ fontWeight: 600 }}>Property</span>
-                        <span>{property.pgName}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--text2)" }}>
-                        <span style={{ fontWeight: 600 }}>Location</span>
-                        <span>{property.area ? `${property.area}, ` : ""}{property.city}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--text2)" }}>
-                        <span style={{ fontWeight: 600 }}>Room Type</span>
-                        <span style={{ textTransform: "capitalize" }}>{roomType}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--text2)" }}>
-                        <span style={{ fontWeight: 600 }}>Check-in</span>
-                        <span>{fmt(checkInDate)}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--text2)" }}>
-                        <span style={{ fontWeight: 600 }}>Check-out</span>
-                        <span>{fmt(checkOutDate)}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--text2)" }}>
-                        <span style={{ fontWeight: 600 }}>Duration</span>
-                        <span>{months} month{months !== 1 ? "s" : ""}</span>
-                      </div>
+                  {/* Booking details card */}
+                  <div className="bg-white border border-[#e2ddd6] rounded-[14px] p-7 shadow-[0_2px_16px_rgba(26,39,68,0.08)] mb-5">
+                    <h3 className="text-[1.12rem] font-bold text-[#1a2744] mb-5 pb-3.5 border-b border-[#e2ddd6]" style={{ fontFamily: "'Fraunces',serif" }}>Booking Details</h3>
+                    <div className="flex flex-col gap-3.5">
+                      {[
+                        { label: "Property", val: property.pgName },
+                        { label: "Location", val: `${property.area ? property.area + ", " : ""}${property.city}` },
+                        { label: "Room Type", val: roomType, capitalize: true },
+                        { label: "Check-in", val: fmt(checkInDate) },
+                        { label: "Check-out", val: fmt(checkOutDate) },
+                        { label: "Duration", val: `${months} month${months !== 1 ? "s" : ""}` },
+                      ].map(({ label, val, capitalize }) => (
+                        <div key={label} className="flex justify-between text-[0.9rem]">
+                          <span className="font-semibold text-[#3d3730]">{label}</span>
+                          <span className={`text-[#3d3730] ${capitalize ? "capitalize" : ""}`}>{val}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="checkout-card">
-                    <h3>Cancellation Policy</h3>
-                    <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: "0.87rem", color: "var(--text2)", lineHeight: 1.75 }}>
+                  {/* Cancellation policy */}
+                  <div className="bg-white border border-[#e2ddd6] rounded-[14px] p-7 shadow-[0_2px_16px_rgba(26,39,68,0.08)] mb-5">
+                    <h3 className="text-[1.12rem] font-bold text-[#1a2744] mb-5 pb-3.5 border-b border-[#e2ddd6]" style={{ fontFamily: "'Fraunces',serif" }}>Cancellation Policy</h3>
+                    <p className="text-[0.87rem] text-[#3d3730] leading-[1.75]">
                       Free cancellation within 48 hours of booking. After that, 1 month's rent will be charged as cancellation fee. No refunds after check-in date.
-                    </div>
+                    </p>
                   </div>
 
-                  <button className="btn-pay teal" onClick={handleConfirmBooking}>
+                  <button
+                    className="w-full py-[15px] rounded-[12px] bg-[#2a7c6f] text-white border-none text-[1rem] font-bold cursor-pointer transition-all duration-300 hover:bg-[#3a9e8e] hover:-translate-y-px"
+                    onClick={handleConfirmBooking}
+                    style={{ fontFamily: "'Outfit',sans-serif" }}
+                  >
                     Proceed to Payment →
                   </button>
                 </div>
 
-                {/* Order Summary */}
-                <OrderSummary property={property} imgSrc={imgSrc} months={months} totalRent={totalRent} platformFee={platformFee} checkInDate={checkInDate} checkOutDate={checkOutDate} fmt={fmt} showFee={false} />
+                <OrderSummary property={property} imgSrc={imgSrc} months={months} totalRent={totalRent} fmt={fmt} showFee={false} />
               </div>
             </>
           )}
@@ -306,86 +170,106 @@ const CheckoutPage = () => {
           {/* ══ STEP 2: PAYMENT ══ */}
           {step === 2 && (
             <>
-              <div className="checkout-title">Secure Payment</div>
-              <div className="checkout-sub">Your payment details are encrypted and secure.</div>
+              <h1 className="text-[2rem] font-black text-[#1a2744] mb-1.5" style={{ fontFamily: "'Fraunces',serif" }}>Secure Payment</h1>
+              <p className="text-[#8a7f74] text-[0.92rem] mb-9">Your payment details are encrypted and secure.</p>
 
-              <div className="checkout-grid">
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_356px] gap-8 items-start">
                 <div>
-                  {/* Payment method - card only */}
-                  <div className="checkout-card">
-                    <h3>Payment Method</h3>
-                    <div className="pay-methods">
-                      <div className="pay-method active">
+                  <div className="bg-white border border-[#e2ddd6] rounded-[14px] p-7 shadow-[0_2px_16px_rgba(26,39,68,0.08)] mb-5">
+                    <h3 className="text-[1.12rem] font-bold text-[#1a2744] mb-5 pb-3.5 border-b border-[#e2ddd6]" style={{ fontFamily: "'Fraunces',serif" }}>Payment Method</h3>
+
+                    {/* Active payment method chip */}
+                    <div className="flex gap-2.5 mb-5">
+                      <div className="border-[1.5px] border-[#2a7c6f] bg-[#e8f5f3] text-[#2a7c6f] rounded-[10px] py-3 px-4.5 flex items-center gap-2 text-[0.84rem] font-semibold">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                          <line x1="1" y1="10" x2="23" y2="10" />
+                          <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
                         </svg>
                         Credit / Debit Card
                       </div>
                     </div>
 
-                    <div className="form-group">
-                      <label>Name on Card</label>
-                      <input className="form-input" placeholder="Priya Sharma" value={cardName} onChange={e => setCardName(e.target.value)} />
+                    <div className="flex flex-col gap-1.5 mb-4">
+                      <label className={labelCls}>Name on Card</label>
+                      <input className={inputCls} placeholder="Priya Sharma" value={cardName} onChange={e => setCardName(e.target.value)} style={{ fontFamily: "'Outfit',sans-serif" }} />
                     </div>
-                    <div className="form-group">
-                      <label>Card Number</label>
-                      <input className="form-input" placeholder="1234 5678 9012 3456" maxLength={19} value={cardNumber} onChange={e => setCardNumber(fmtCard(e.target.value))} />
+                    <div className="flex flex-col gap-1.5 mb-4">
+                      <label className={labelCls}>Card Number</label>
+                      <input className={inputCls} placeholder="1234 5678 9012 3456" maxLength={19} value={cardNumber} onChange={e => setCardNumber(fmtCard(e.target.value))} style={{ fontFamily: "'Outfit',sans-serif" }} />
                     </div>
-                    <div className="form-grid-2">
-                      <div className="form-group">
-                        <label>Expiry Date</label>
-                        <input className="form-input" placeholder="MM/YY" maxLength={5} value={cardExpiry} onChange={e => setCardExpiry(fmtExpiry(e.target.value))} />
+                    <div className="grid grid-cols-2 gap-3.5">
+                      <div className="flex flex-col gap-1.5">
+                        <label className={labelCls}>Expiry Date</label>
+                        <input className={inputCls} placeholder="MM/YY" maxLength={5} value={cardExpiry} onChange={e => setCardExpiry(fmtExpiry(e.target.value))} style={{ fontFamily: "'Outfit',sans-serif" }} />
                       </div>
-                      <div className="form-group">
-                        <label>CVV</label>
-                        <input className="form-input" placeholder="•••" maxLength={4} type="password" value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))} />
+                      <div className="flex flex-col gap-1.5">
+                        <label className={labelCls}>CVV</label>
+                        <input className={inputCls} placeholder="•••" maxLength={4} type="password" value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))} style={{ fontFamily: "'Outfit',sans-serif" }} />
                       </div>
                     </div>
                   </div>
 
-                  <button className="btn-pay" onClick={handlePayment} disabled={paying}>
-                    {paying ? <><div className="spin" /> Processing…</> : `Pay ₹${totalRent.toLocaleString()} →`}
+                  <button
+                    className="w-full py-[15px] rounded-[12px] bg-[#1a2744] text-white border-none text-[1rem] font-bold cursor-pointer transition-all duration-300 flex items-center justify-center gap-2 hover:bg-[#243356] hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                    onClick={handlePayment}
+                    disabled={paying}
+                    style={{ fontFamily: "'Outfit',sans-serif" }}
+                  >
+                    {paying ? (
+                      <><div className="checkout-spinner" /> Processing…</>
+                    ) : (
+                      `Pay ₹${totalRent.toLocaleString()} →`
+                    )}
                   </button>
-                  <div className="secure-row">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+
+                  <div className="flex items-center gap-1.5 text-[#8a7f74] text-[0.77rem] mt-3 py-2.5 px-3 bg-[#faf9f7] rounded-[8px]">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2a7c6f" strokeWidth="2">
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
                     256-bit SSL encryption · PCI DSS compliant · Your card data is never stored
                   </div>
                 </div>
 
-                <OrderSummary property={property} imgSrc={imgSrc} months={months} totalRent={totalRent} platformFee={platformFee} checkInDate={checkInDate} checkOutDate={checkOutDate} fmt={fmt} showFee={true} />
+                <OrderSummary property={property} imgSrc={imgSrc} months={months} totalRent={totalRent} fmt={fmt} showFee={true} />
               </div>
             </>
           )}
 
           {/* ══ STEP 3: SUCCESS ══ */}
           {step === 3 && (
-            <div className="success-screen">
-              <div className="success-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <div className="text-center py-16 px-6 checkout-animate">
+              <div className="w-[84px] h-[84px] rounded-full bg-[#e8f5f3] border-[3px] border-[#2a7c6f] flex items-center justify-center mx-auto mb-7">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#2a7c6f" strokeWidth="2.5">
                   <polyline points="20,6 9,17 4,12" />
                 </svg>
               </div>
-              <h2>Booking Confirmed! 🎉</h2>
-              <p>Your stay at <strong>{property.pgName}</strong> has been booked successfully. The landlord will contact you within 24 hours.</p>
 
-              <div className="booking-ref">
-                <span>Booking Reference</span>
-                <strong>{refCode}</strong>
+              <h2 className="text-[2.2rem] font-black text-[#1a2744] mb-2.5" style={{ fontFamily: "'Fraunces',serif" }}>Booking Confirmed! 🎉</h2>
+              <p className="text-[#8a7f74] text-[0.97rem] max-w-[480px] mx-auto mb-8 leading-[1.75]">
+                Your stay at <strong className="text-[#1a2744]">{property.pgName}</strong> has been booked successfully. The landlord will contact you within 24 hours.
+              </p>
+
+              <div className="bg-[#e8f5f3] border-[1.5px] border-[rgba(42,124,111,0.3)] rounded-[14px] py-4.5 px-8 inline-block mb-9">
+                <span className="text-[0.75rem] font-bold uppercase tracking-[1.5px] text-[#2a7c6f] block mb-1">Booking Reference</span>
+                <strong className="text-[1.5rem] font-black text-[#1a2744]" style={{ fontFamily: "'Fraunces',serif" }}>{refCode}</strong>
               </div>
 
-              <div className="success-actions">
-                <button className="btn-action navy" onClick={() => navigate("/user/bookings")}>View My Bookings</button>
-                <button className="btn-action ghost" onClick={() => navigate("/user/browse")}>Browse More PGs</button>
+              <div className="flex gap-3 justify-center flex-wrap mb-12">
+                <button className="py-3 px-7 rounded-[11px] bg-[#1a2744] text-white border-none text-[0.93rem] font-bold cursor-pointer hover:-translate-y-px transition-all duration-300 hover:bg-[#243356]" onClick={() => navigate("/user/bookings")} style={{ fontFamily: "'Outfit',sans-serif" }}>View My Bookings</button>
+                <button className="py-3 px-7 rounded-[11px] bg-[#f0ede8] text-[#3d3730] border-none text-[0.93rem] font-bold cursor-pointer hover:-translate-y-px transition-all duration-300 hover:bg-[#e2ddd6]" onClick={() => navigate("/user/browse")} style={{ fontFamily: "'Outfit',sans-serif" }}>Browse More PGs</button>
               </div>
 
-              <div className="next-steps">
-                <h4>What happens next?</h4>
-                <div className="next-step-item"><div className="step-num">1</div>Landlord contacts you within 24 hours to schedule a move-in visit.</div>
-                <div className="next-step-item"><div className="step-num">2</div>Submit your ID verification documents via the portal.</div>
-                <div className="next-step-item"><div className="step-num">3</div>Move in on your selected date. Welcome home!</div>
+              <div className="bg-white border border-[#e2ddd6] rounded-[14px] p-6 max-w-[500px] mx-auto text-left">
+                <h4 className="font-bold text-[1rem] text-[#1a2744] mb-4" style={{ fontFamily: "'Fraunces',serif" }}>What happens next?</h4>
+                {[
+                  "Landlord contacts you within 24 hours to schedule a move-in visit.",
+                  "Submit your ID verification documents via the portal.",
+                  "Move in on your selected date. Welcome home!",
+                ].map((step, i) => (
+                  <div key={i} className="flex gap-3 text-[0.87rem] text-[#3d3730] mb-3 leading-[1.6]">
+                    <div className="w-[26px] h-[26px] rounded-full bg-[#2a7c6f] text-white flex items-center justify-center font-bold text-[0.75rem] flex-shrink-0">{i + 1}</div>
+                    {step}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -396,22 +280,33 @@ const CheckoutPage = () => {
   );
 };
 
-const OrderSummary = ({ property, imgSrc, months, totalRent, platformFee, checkInDate, checkOutDate, fmt, showFee }) => (
-  <div className="order-summary-card">
-    <h3>Order Summary</h3>
-    <img src={imgSrc} alt={property.pgName} className="order-prop-img" onError={e => { e.target.style.display = "none"; }} />
-    <div className="order-prop-name">{property.pgName}</div>
-    <div className="order-prop-loc">📍 {property.area ? `${property.area}, ` : ""}{property.city}</div>
-    <div className="order-line"><span>📅 {fmt(checkInDate)} → {fmt(checkOutDate)}</span></div>
-    <div className="order-line"><span>🛏 {months} month{months !== 1 ? "s" : ""} × ₹{property.rent?.toLocaleString()}</span><span>₹{totalRent.toLocaleString()}</span></div>
-    {showFee && (
-      <div className="order-line"><span>🏷 Booking fee</span><span style={{ color: "var(--teal)" }}>Free</span></div>
-    )}
-    <div className="order-line"><span><strong>Total Amount</strong></span><span><strong>₹{totalRent.toLocaleString()}</strong></span></div>
-    {showFee && (
-      <div style={{ marginTop: 12, padding: "10px 0", borderTop: "1px solid var(--border)", fontSize: "0.75rem", color: "var(--muted)", fontFamily: "'Outfit',sans-serif", lineHeight: 1.6 }}>
-        * A {5}% platform fee is deducted from landlord's payment. You pay the full rent amount.
+const OrderSummary = ({ property, imgSrc, months, totalRent, fmt, showFee }) => (
+  <div className="bg-white border border-[#e2ddd6] rounded-[14px] p-6 shadow-[0_2px_16px_rgba(26,39,68,0.08)] sticky top-[88px]" style={{ fontFamily: "'Outfit',sans-serif" }}>
+    <h3 className="text-[1.05rem] font-bold text-[#1a2744] mb-4.5" style={{ fontFamily: "'Fraunces',serif" }}>Order Summary</h3>
+    <img src={imgSrc} alt={property.pgName} className="w-full h-[136px] object-cover rounded-[10px] mb-3.5 bg-[#f0ede8]" onError={e => { e.target.style.display = "none"; }} />
+    <div className="font-bold text-[#1a2744] text-[0.93rem] mb-1" style={{ fontFamily: "'Fraunces',serif" }}>{property.pgName}</div>
+    <div className="text-[#8a7f74] text-[0.8rem] mb-4">📍 {property.area ? `${property.area}, ` : ""}{property.city}</div>
+
+    {[
+      { label: `📅 ${fmt(property._checkIn)} → ${fmt(property._checkOut)}`, val: null },
+      { label: `🛏 ${months} month${months !== 1 ? "s" : ""} × ₹${property.rent?.toLocaleString()}`, val: `₹${totalRent.toLocaleString()}` },
+      ...(showFee ? [{ label: "🏷 Booking fee", val: "Free", teal: true }] : []),
+    ].filter(Boolean).map(({ label, val, teal }, i) => (
+      <div key={i} className="flex justify-between text-[0.86rem] py-2 border-b border-[#e2ddd6] text-[#3d3730]">
+        <span>{label}</span>
+        {val && <span className={teal ? "text-[#2a7c6f] font-semibold" : ""}>{val}</span>}
       </div>
+    ))}
+
+    <div className="flex justify-between text-[0.96rem] font-bold text-[#1a2744] pt-3">
+      <span>Total Amount</span>
+      <span>₹{totalRent.toLocaleString()}</span>
+    </div>
+
+    {showFee && (
+      <p className="mt-3 pt-2.5 border-t border-[#e2ddd6] text-[0.75rem] text-[#8a7f74] leading-[1.6]">
+        * A 5% platform fee is deducted from landlord's payment. You pay the full rent amount.
+      </p>
     )}
   </div>
 );

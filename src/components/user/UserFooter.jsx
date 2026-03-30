@@ -11,109 +11,51 @@ export default function UserFooter() {
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');`}</style>
 
-        .pgf-footer {
-          border-top: 1px solid #e2ddd6;
-          background: #f5f2ed;
-          font-family: 'Outfit', sans-serif;
-        }
-        .pgf-footer-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr 1fr;
-          gap: 40px;
-          padding: 40px 56px 32px;
-        }
-        .pgf-footer-logo {
-          font-family: 'Fraunces', serif;
-          font-size: 1.3rem; font-weight: 900;
-          color: #1a2744; margin-bottom: 12px;
-          display: block; cursor: pointer;
-        }
-        .pgf-footer-logo em { color: #2a7c6f; font-style: normal; }
-        .pgf-footer-brand p {
-          color: #8a7f74; font-size: 0.85rem;
-          line-height: 1.65; max-width: 240px;
-        }
-        .pgf-footer-col h4 {
-          font-weight: 700; font-size: 0.85rem;
-          color: #1a2744; margin-bottom: 16px;
-          text-transform: uppercase; letter-spacing: 0.8px;
-        }
-        .pgf-footer-col a {
-          display: block; color: #8a7f74;
-          font-size: 0.85rem; text-decoration: none;
-          margin-bottom: 10px;
-          transition: color 0.2s;
-        }
-        .pgf-footer-col a:hover { color: #1a2744; }
-
-        .pgf-footer-bottom {
-          border-top: 1px solid #e2ddd6;
-          padding: 20px 56px;
-          display: flex; align-items: center;
-          justify-content: space-between;
-          color: #8a7f74; font-size: 0.82rem;
-          font-family: 'Outfit', sans-serif;
-          flex-wrap: wrap; gap: 12px;
-        }
-        .pgf-footer-bottom-links {
-          display: flex; gap: 20px;
-        }
-        .pgf-footer-bottom-links a {
-          color: #8a7f74; text-decoration: none;
-          transition: color 0.2s;
-        }
-        .pgf-footer-bottom-links a:hover { color: #1a2744; }
-
-        @media (max-width: 900px) {
-          .pgf-footer-grid {
-            grid-template-columns: 1fr 1fr;
-            padding: 32px 24px 24px;
-          }
-          .pgf-footer-bottom {
-            padding: 16px 24px;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
-          }
-        }
-        @media (max-width: 560px) {
-          .pgf-footer-grid {
-            grid-template-columns: 1fr;
-            gap: 28px;
-          }
-        }
-      `}</style>
-
-      <footer className="pgf-footer">
-        <div className="pgf-footer-grid">
+      <footer className="border-t border-[#e2ddd6] bg-[#f5f2ed]" style={{ fontFamily: "'Outfit', sans-serif" }}>
+        {/* Main grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 px-6 lg:px-14 py-12">
           {/* Brand */}
-          <div className="pgf-footer-brand">
-            <span className="pgf-footer-logo" onClick={() => navigate("/user/home")}>
-              PG<em>Finder</em>
+          <div>
+            <span
+              className="block text-[1.3rem] font-black text-[#1a2744] mb-3 cursor-pointer"
+              style={{ fontFamily: "'Fraunces', serif" }}
+              onClick={() => navigate("/user/home")}
+            >
+              PG<em className="text-[#2a7c6f] not-italic">Finder</em>
             </span>
-            <p>India's most trusted platform for finding and booking verified paying guest accommodations.</p>
+            <p className="text-[#8a7f74] text-[0.85rem] leading-[1.65] max-w-[240px]">
+              India's most trusted platform for finding and booking verified paying guest accommodations.
+            </p>
           </div>
 
           {/* Link columns */}
           {Object.entries(footerLinks).map(([heading, links]) => (
-            <div key={heading} className="pgf-footer-col">
-              <h4>{heading}</h4>
+            <div key={heading}>
+              <h4 className="font-bold text-[0.85rem] text-[#1a2744] mb-4 uppercase tracking-[0.8px]">
+                {heading}
+              </h4>
               {links.map((l) => (
-                <a key={l} href="#">{l}</a>
+                <a
+                  key={l}
+                  href="#"
+                  className="block text-[#8a7f74] text-[0.85rem] no-underline mb-2.5 transition-colors duration-200 hover:text-[#1a2744]"
+                >
+                  {l}
+                </a>
               ))}
             </div>
           ))}
         </div>
 
-        <div className="pgf-footer-bottom">
+        {/* Bottom bar */}
+        <div className="border-t border-[#e2ddd6] px-6 lg:px-14 py-5 flex items-center justify-between flex-wrap gap-3 text-[#8a7f74] text-[0.82rem]">
           <div>© 2025 PGFinder. All rights reserved.</div>
-          <div className="pgf-footer-bottom-links">
-            <a href="/privacypolicy">Privacy</a>
-            <a href="/t&c">Terms</a>
-            <a href="#">Support</a>
+          <div className="flex gap-5">
+            <a href="/privacypolicy" className="text-[#8a7f74] no-underline transition-colors duration-200 hover:text-[#1a2744]">Privacy</a>
+            <a href="/t&c" className="text-[#8a7f74] no-underline transition-colors duration-200 hover:text-[#1a2744]">Terms</a>
+            <a href="#" className="text-[#8a7f74] no-underline transition-colors duration-200 hover:text-[#1a2744]">Support</a>
           </div>
         </div>
       </footer>

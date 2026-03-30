@@ -202,7 +202,7 @@ const PropertyDetails = () => {
       toast.error("Check-out must be after check-in");
       return;
     }
-    navigate(`/user/checkout/${id}`, {
+    navigate(`/checkout/${id}`, {
       state: { checkInDate, checkOutDate, roomType, months, property }
     });
   };

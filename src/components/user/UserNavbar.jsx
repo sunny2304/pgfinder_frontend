@@ -9,17 +9,14 @@ export const UserNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check login status using token
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    // Do not call API if user is not logged in
     if (!token) return;
-
     axios
       .get("/profile", { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setUser(res.data.data))
-      .catch(() => { });
+      .catch(() => {});
   }, [token]);
 
   const handleLogout = () => {
@@ -31,16 +28,14 @@ export const UserNavbar = () => {
   const isActive = (path) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
 
-  // Show limited links for guest, full links for logged in user
   const navLinks = [
-    { label: "Home", path: "/" },
-    { label: "Browse PGs", path: "/browse" },
-
+    { label: "Home", path: "/user/home" },
+    { label: "Browse PGs", path: "/user/browse" },
     ...(token
       ? [
-        { label: "My Bookings", path: "/bookings" },
-        { label: "Saved PGs", path: "/savedpgs" },
-      ]
+          { label: "My Bookings", path: "/user/bookings" },
+          { label: "Saved PGs", path: "/user/savedpgs" },
+        ]
       : []),
   ];
 
@@ -48,199 +43,136 @@ export const UserNavbar = () => {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        .pgf-nav {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 500;
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 0 56px; height: 68px;
-          background: rgba(255,255,255,0.93);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-bottom: 1px solid #e2ddd6;
-          box-shadow: 0 1px 0 rgba(26,39,68,0.04);
-          transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-        }
-
-        .pgf-logo {
-          font-family: 'Fraunces', serif;
-          font-size: 1.55rem; font-weight: 900;
-          color: #1a2744; letter-spacing: -0.5px; cursor: pointer;
-          text-decoration: none; flex-shrink: 0;
-        }
-        .pgf-logo em { color: #2a7c6f; font-style: normal; }
-
-        .pgf-nav-center {
-          display: flex; gap: 2px; align-items: center;
-        }
-
-        .pgf-nav-link {
-          background: none; border: none; cursor: pointer;
-          color: #8a7f74;
-          font-family: 'Outfit', sans-serif;
-          font-size: 0.87rem; font-weight: 500;
-          padding: 8px 14px; border-radius: 8px;
-          text-decoration: none; display: inline-flex; align-items: center;
-          transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-        }
-        .pgf-nav-link:hover { background: #f0ede8; color: #1a2744; }
-        .pgf-nav-link.active { background: #f0ede8; color: #1a2744; }
-
-        .pgf-nav-right { display: flex; align-items: center; gap: 8px; }
-
-        .pgf-avatar {
-          width: 36px; height: 36px; border-radius: 50%;
-          background: #1a2744; color: #fff;
-          border: none; cursor: pointer;
-          font-weight: 700; font-size: 0.88rem;
-          font-family: 'Outfit', sans-serif;
-          display: flex; align-items: center; justify-content: center;
-          transition: background 0.2s; flex-shrink: 0;
-        }
-        .pgf-avatar:hover { background: #243356; }
-
-        .pgf-logout-btn {
-          background: none;
-          border: 1.5px solid #e2ddd6;
-          cursor: pointer; color: #1a2744;
-          font-family: 'Outfit', sans-serif;
-          font-size: 0.87rem; font-weight: 600;
-          padding: 8px 20px; border-radius: 9px;
-          transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-        }
-        .pgf-logout-btn:hover { border-color: #1a2744; background: #f0ede8; }
-
-        .pgf-hamburger {
-          display: none;
-          flex-direction: column; gap: 5px; cursor: pointer;
-          background: none; border: none; padding: 4px;
-        }
-        .pgf-hamburger span {
-          display: block; width: 22px; height: 2px;
-          background: #1a2744; border-radius: 2px;
-          transition: all 0.3s ease;
-        }
-
-        @media (max-width: 900px) {
-          .pgf-nav { padding: 0 20px; }
-          .pgf-nav-center { display: none; }
-          .pgf-logout-btn { display: none; }
-          .pgf-hamburger { display: flex; }
-        }
       `}</style>
 
-      <nav className="pgf-nav">
-        <span className="pgf-logo" onClick={() => navigate("/")}>
-          PG<em>Finder</em>
+      <nav
+        className="fixed top-0 left-0 right-0 z-[500] flex items-center justify-between h-[68px] px-14 bg-white/[0.93] backdrop-blur-xl border-b border-[#e2ddd6] shadow-[0_1px_0_rgba(26,39,68,0.04)]"
+        style={{ fontFamily: "'Outfit', sans-serif" }}
+      >
+        {/* Logo */}
+        <span
+          className="text-[1.55rem] font-black text-[#1a2744] tracking-[-0.5px] cursor-pointer flex-shrink-0"
+          style={{ fontFamily: "'Fraunces', serif" }}
+          onClick={() => navigate("/user/home")}
+        >
+          PG<em className="text-[#2a7c6f] not-italic">Finder</em>
         </span>
 
-        <div className="pgf-nav-center">
+        {/* Desktop nav links */}
+        <div className="hidden md:flex gap-0.5 items-center">
           {navLinks.map((link) => (
             <Link
               key={link.label}
               to={link.path}
-              className={`pgf-nav-link${isActive(link.path) ? " active" : ""}`}
+              className={`text-[0.87rem] font-medium px-3.5 py-2 rounded-lg no-underline transition-all duration-300 ${
+                isActive(link.path)
+                  ? "bg-[#f0ede8] text-[#1a2744]"
+                  : "text-[#8a7f74] hover:bg-[#f0ede8] hover:text-[#1a2744]"
+              }`}
             >
               {link.label}
             </Link>
           ))}
-
-          {/* Show landlord option only for guest users */}
-          {!token && (
-            <Link to="/landlord" className="pgf-nav-link">
-              For Landlords
-            </Link>
-          )}
+          <Link
+            to="/landlord"
+            className="text-[0.87rem] font-medium px-3.5 py-2 rounded-lg no-underline text-[#8a7f74] hover:bg-[#f0ede8] hover:text-[#1a2744] transition-all duration-300"
+          >
+            For Landlords
+          </Link>
+          <Link
+            to="/admin"
+            className={`text-[0.87rem] font-medium px-3.5 py-2 rounded-lg no-underline transition-all duration-300 ${
+              isActive("/admin")
+                ? "bg-[#f0ede8] text-[#1a2744]"
+                : "text-[#8a7f74] hover:bg-[#f0ede8] hover:text-[#1a2744]"
+            }`}
+          >
+            Admin
+          </Link>
         </div>
 
-        <div className="pgf-nav-right">
-          {/* Show Login if not logged in, else Logout */}
-          {!token ? (
+        {/* Right */}
+        <div className="flex items-center gap-3">
+          <button
+            className="hidden md:block text-[0.87rem] font-medium text-[#8a7f74] hover:text-[#1a2744] bg-transparent border-none cursor-pointer transition-colors duration-200"
+            onClick={() => navigate("/user/browse")}
+            style={{ fontFamily: "'Outfit', sans-serif" }}
+          >
+            Browse
+          </button>
+
+          {/* Avatar - always visible when logged in */}
+          {token ? (
             <button
-              className="pgf-logout-btn"
-              onClick={() => navigate("/login")}
+              className="w-9 h-9 rounded-full bg-[#1a2744] text-white border-none cursor-pointer font-bold text-[0.88rem] flex items-center justify-center hover:bg-[#243356] flex-shrink-0 transition-colors duration-200"
+              onClick={() => navigate("/user/profile")}
+              title="My Profile"
+              style={{ fontFamily: "'Outfit', sans-serif" }}
+            >
+              {user ? user.firstName[0].toUpperCase() : "P"}
+            </button>
+          ) : (
+            <button
+              className="hidden md:block bg-transparent border border-[#e2ddd6] text-[#1a2744] text-[0.87rem] font-semibold px-5 py-2 rounded-[9px] cursor-pointer transition-all duration-300 hover:border-[#1a2744] hover:bg-[#f0ede8]"
+              onClick={() => navigate("/")}
+              style={{ fontFamily: "'Outfit', sans-serif" }}
             >
               Login
             </button>
-          ) : (
-            <>
-              <button className="pgf-logout-btn" onClick={handleLogout}>
-                Logout
-              </button>
-
-              <button
-                className="pgf-avatar"
-                onClick={() => navigate("/user/profile")}
-                title="My Profile"
-              >
-                {user ? user.firstName[0].toUpperCase() : "P"}
-              </button>
-            </>
           )}
 
+          {/* Hamburger */}
           <button
-            className={`pgf-hamburger${menuOpen ? " open" : ""}`}
+            className="flex md:hidden flex-col gap-[5px] cursor-pointer bg-transparent border-none p-1"
             onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
           >
-            <span />
-            <span />
-            <span />
+            <span className="block w-[22px] h-[2px] bg-[#1a2744] rounded-sm transition-all duration-300" />
+            <span className="block w-[22px] h-[2px] bg-[#1a2744] rounded-sm transition-all duration-300" />
+            <span className="block w-[22px] h-[2px] bg-[#1a2744] rounded-sm transition-all duration-300" />
           </button>
         </div>
       </nav>
 
+      {/* Mobile Drawer */}
       {menuOpen && (
-        <div className="pgf-mobile-menu">
+        <div
+          className="fixed top-[68px] left-0 right-0 z-[499] bg-white/[0.98] backdrop-blur-xl border-b border-[#e2ddd6] shadow-lg flex flex-col px-6 py-4 gap-1 md:hidden"
+          style={{ fontFamily: "'Outfit', sans-serif" }}
+        >
           {navLinks.map((link) => (
             <Link
               key={link.label}
               to={link.path}
-              className={`pgf-mobile-link${isActive(link.path) ? " active" : ""
-                }`}
+              className={`px-3.5 py-3 rounded-[10px] text-[0.93rem] font-medium no-underline transition-all duration-200 ${
+                isActive(link.path)
+                  ? "bg-[#f0ede8] text-[#1a2744] font-semibold"
+                  : "text-[#3d3730] hover:bg-[#f0ede8] hover:text-[#1a2744]"
+              }`}
               onClick={() => setMenuOpen(false)}
             >
               {link.label}
             </Link>
           ))}
-
-          {!token && (
-            <Link
-              to="/landlord"
-              className="pgf-mobile-link"
-              onClick={() => setMenuOpen(false)}
-            >
-              For Landlords
-            </Link>
-          )}
-
+          <Link to="/landlord" className="px-3.5 py-3 rounded-[10px] text-[0.93rem] font-medium text-[#3d3730] no-underline hover:bg-[#f0ede8] hover:text-[#1a2744] transition-all duration-200" onClick={() => setMenuOpen(false)}>For Landlords</Link>
+          <Link to="/admin" className="px-3.5 py-3 rounded-[10px] text-[0.93rem] font-medium text-[#3d3730] no-underline hover:bg-[#f0ede8] hover:text-[#1a2744] transition-all duration-200" onClick={() => setMenuOpen(false)}>Admin</Link>
           {token && (
-            <Link
-              to="/user/profile"
-              className="pgf-mobile-link"
-              onClick={() => setMenuOpen(false)}
-            >
-              My Profile
-            </Link>
+            <Link to="/user/profile" className="px-3.5 py-3 rounded-[10px] text-[0.93rem] font-medium text-[#3d3730] no-underline hover:bg-[#f0ede8] hover:text-[#1a2744] transition-all duration-200" onClick={() => setMenuOpen(false)}>My Profile</Link>
           )}
-
-          <div className="pgf-mobile-divider" />
-
-          {!token ? (
-            <button
-              className="pgf-mobile-link"
-              onClick={() => navigate("/login")}
-            >
-              Login
+          <div className="h-px bg-[#e2ddd6] my-2" />
+          {token ? (
+            <button className="px-3.5 py-3 rounded-[10px] text-[0.93rem] font-semibold text-[#e05a3a] bg-transparent border-none cursor-pointer text-left hover:bg-[#fdf0ec] transition-all duration-200 mt-1" onClick={handleLogout} style={{ fontFamily: "'Outfit', sans-serif" }}>
+              Logout
             </button>
           ) : (
-            <button className="pgf-mobile-logout" onClick={handleLogout}>
-              Logout
+            <button className="px-3.5 py-3 rounded-[10px] text-[0.93rem] font-medium text-[#3d3730] bg-transparent border-none cursor-pointer text-left hover:bg-[#f0ede8] transition-all duration-200" onClick={() => { navigate("/"); setMenuOpen(false); }} style={{ fontFamily: "'Outfit', sans-serif" }}>
+              Login
             </button>
           )}
         </div>
       )}
 
-      <main style={{ paddingTop: 68, background: "#f5f2ed", minHeight: "100vh" }}>
+      <main className="pt-[68px] bg-[#f5f2ed] min-h-screen" style={{ fontFamily: "'Outfit', sans-serif" }}>
         <Outlet />
       </main>
     </>
