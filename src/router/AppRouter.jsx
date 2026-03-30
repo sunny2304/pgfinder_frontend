@@ -25,14 +25,10 @@ import CheckoutPage from "../pages/CheckoutPage";
 import PrivacyPolicy from "../pages/PrivacyPolicy";
 import TermsAndConditions from "../pages/TermsAndConditions";
 
-// Simple Protected Route
-const ProtectedRoute = ({ element }) => {
-  const token = localStorage.getItem("token");
-  return token ? element : <Navigate to="/login" replace />;
-};
+// Protected Route
+import ProtectedRoute from "../hooks/ProtectedRoutes";
 
 const router = createBrowserRouter([
-  // Public routes
   {
     path: "/",
     element: <UserNavbar />,
@@ -41,26 +37,46 @@ const router = createBrowserRouter([
       { path: "browse", element: <BrowsePG /> },
       { path: "property/:id", element: <PropertyDetails /> },
 
-      // Protected routes
+      // 🔐 Protected Routes
       {
         path: "bookings",
-        element: <ProtectedRoute element={<MyBookings />} />,
+        element: (
+          <ProtectedRoute>
+            <MyBookings />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "savedpgs",
-        element: <ProtectedRoute element={<SavedPgs />} />,
+        element: (
+          <ProtectedRoute>
+            <SavedPgs />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "profile",
-        element: <ProtectedRoute element={<UserProfile />} />,
+        element: (
+          <ProtectedRoute>
+            <UserProfile />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "edit-profile",
-        element: <ProtectedRoute element={<EditProfile />} />,
+        element: (
+          <ProtectedRoute>
+            <EditProfile />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "checkout/:id",
-        element: <ProtectedRoute element={<CheckoutPage />} />,
+        element: (
+          <ProtectedRoute>
+            <CheckoutPage />
+          </ProtectedRoute>
+        ),
       },
     ],
   },
@@ -69,11 +85,18 @@ const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
   { path: "/signup", element: <Signup /> },
 
-  // Admin
-  { path: "/admin", element: <AdminSidebar /> },
+  // 🔐 Landlord (Protected)
+  {
+    path: "/landlord",
+    element: (
+      <ProtectedRoute>
+        <LandlordDashboard />
+      </ProtectedRoute>
+    ),
+  },
 
-  // Landlord
-  { path: "/landlord", element: <LandlordDashboard /> },
+  // Admin (can protect later)
+  { path: "/admin", element: <AdminSidebar /> },
 
   // Static
   { path: "/t&c", element: <TermsAndConditions /> },

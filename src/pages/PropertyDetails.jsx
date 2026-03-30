@@ -126,7 +126,7 @@ const PG_IMAGES = [
   "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&q=80",
 ];
 
-const AMENITY_ICONS = { wifi: "📶", meals: "🍽️", laundry: "👕", ac: "❄️", gym: "💪", parking: "🅿️", security: "🔒" };
+const AMENITY_ICONS = { wifi: "", meals: "", laundry: "", ac: "", gym: "", parking: "🅿", security: "" };
 const GENDER_MAP = { male: "Boys Only", female: "Girls Only", unisex: "Co-ed / Unisex" };
 
 const PropertyDetails = () => {
