@@ -8,6 +8,9 @@ export const UserNavbar = () => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   const token = localStorage.getItem("token");
 
@@ -155,7 +158,7 @@ export const UserNavbar = () => {
               {link.label}
             </Link>
           ))}
-          
+
           {token && (
             <Link to="/user/profile" className="px-4 py-3 rounded-[10px] text-[0.9rem] font-medium text-[#3d3730] no-underline hover:bg-[#f5f3f0] hover:text-[#1a2744] transition-colors duration-200" onClick={() => setMenuOpen(false)}>My Profile</Link>
           )}
