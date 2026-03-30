@@ -39,7 +39,7 @@ export default function UserHome() {
     const params = new URLSearchParams();
     if (searchLocation) params.set("location", searchLocation);
     if (searchBudget) params.set("budget", searchBudget);
-    navigate(`/user/browse?${params.toString()}`);
+    navigate(`/browse?${params.toString()}`);
   };
 
   // ── features data (unchanged)
@@ -342,7 +342,7 @@ export default function UserHome() {
             <button
               className="text-[#3d3730] text-[0.88rem] font-medium bg-transparent border-none cursor-pointer hover:text-[#1a2744] transition-colors duration-200 underline-offset-2"
               style={{ fontFamily: "'Outfit', sans-serif" }}
-              onClick={() => navigate("/user/browse")}
+              onClick={() => navigate("/browse")}
             >
               View All Properties →
             </button>
@@ -358,7 +358,7 @@ export default function UserHome() {
                     <div
                       key={pg._id}
                       className="prop-card bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 shadow-[0_2px_20px_rgba(26,39,68,0.07)] hover:shadow-[0_8px_40px_rgba(26,39,68,0.14)] hover:-translate-y-1"
-                      onClick={() => navigate(`/user/property/${pg._id}`)}
+                      onClick={() => navigate(`/property/${pg._id}`)}
                     >
                       {/* Image */}
                       <div className="card-img-wrap h-[210px] relative overflow-hidden bg-[#e8f5f3]">
@@ -434,7 +434,7 @@ export default function UserHome() {
                   <div
                     key={p.name}
                     className="prop-card bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 shadow-[0_2px_20px_rgba(26,39,68,0.07)] hover:shadow-[0_8px_40px_rgba(26,39,68,0.14)] hover:-translate-y-1"
-                    onClick={() => navigate("/user/browse")}
+                    onClick={() => navigate("/browse")}
                   >
                     {/* Image */}
                     <div className="card-img-wrap h-[210px] relative overflow-hidden bg-[#f0ede8]">

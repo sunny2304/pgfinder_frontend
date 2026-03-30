@@ -16,7 +16,7 @@ export const UserNavbar = () => {
     axios
       .get("/profile", { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setUser(res.data.data))
-      .catch(() => {});
+      .catch(() => { });
   }, [token]);
 
   const handleLogout = () => {
@@ -29,13 +29,20 @@ export const UserNavbar = () => {
     location.pathname === path || location.pathname.startsWith(path + "/");
 
   const navLinks = [
-    { label: "Home", path: "/user/home" },
-    { label: "Browse PGs", path: "/user/browse" },
+    { label: "Home", path: "/" },
+    { label: "Browse PGs", path: "/browse" },
+
+    // Only when NOT logged in
+    ...(!token
+      ? [{ label: "For Landlords", path: "/landlord" }]
+      : []),
+
+    // Only when logged in
     ...(token
       ? [
-          { label: "My Bookings", path: "/user/bookings" },
-          { label: "Saved PGs", path: "/user/savedpgs" },
-        ]
+        { label: "My Bookings", path: "/bookings" },
+        { label: "Saved PGs", path: "/savedpgs" },
+      ]
       : []),
   ];
 
@@ -54,7 +61,7 @@ export const UserNavbar = () => {
         <span
           className="text-[1.5rem] font-black text-[#1a2744] tracking-[-0.5px] cursor-pointer flex-shrink-0 select-none"
           style={{ fontFamily: "'Fraunces', serif" }}
-          onClick={() => navigate("/user/home")}
+          onClick={() => navigate("/")}
         >
           PG<em className="text-[#2a7c6f] not-italic">Finder</em>
         </span>
@@ -65,35 +72,14 @@ export const UserNavbar = () => {
             <Link
               key={link.label}
               to={link.path}
-              className={`text-[0.875rem] font-medium px-4 py-2 rounded-lg no-underline transition-colors duration-200 ${
-                isActive(link.path)
-                  ? "bg-[#f0ede8] text-[#1a2744] font-semibold"
-                  : "text-[#6b6560] hover:text-[#1a2744] hover:bg-[#f5f3f0]"
-              }`}
+              className={`text-[0.875rem] font-medium px-4 py-2 rounded-lg no-underline transition-colors duration-200 ${isActive(link.path)
+                ? "bg-[#f0ede8] text-[#1a2744] font-semibold"
+                : "text-[#6b6560] hover:text-[#1a2744] hover:bg-[#f5f3f0]"
+                }`}
             >
               {link.label}
             </Link>
           ))}
-          <Link
-            to="/landlord"
-            className={`text-[0.875rem] font-medium px-4 py-2 rounded-lg no-underline transition-colors duration-200 ${
-              isActive("/landlord")
-                ? "bg-[#f0ede8] text-[#1a2744] font-semibold"
-                : "text-[#6b6560] hover:text-[#1a2744] hover:bg-[#f5f3f0]"
-            }`}
-          >
-            For Landlords
-          </Link>
-          <Link
-            to="/admin"
-            className={`text-[0.875rem] font-medium px-4 py-2 rounded-lg no-underline transition-colors duration-200 ${
-              isActive("/admin")
-                ? "bg-[#f0ede8] text-[#1a2744] font-semibold"
-                : "text-[#6b6560] hover:text-[#1a2744] hover:bg-[#f5f3f0]"
-            }`}
-          >
-            Admin
-          </Link>
         </div>
 
         {/* Right side */}
@@ -102,15 +88,15 @@ export const UserNavbar = () => {
             /* Logged-in state: Browse text link + dark avatar circle */
             <>
               <button
-                className="hidden md:block text-[0.875rem] font-medium text-[#6b6560] hover:text-[#1a2744] bg-transparent border-none cursor-pointer transition-colors duration-200 px-2"
-                onClick={() => navigate("/browse")}
+                className="hidden md:block text-[0.875rem] font-medium text-[#e05a3a] hover:text-[#c94a2f] bg-transparent border-none cursor-pointer transition-colors duration-200 px-3 py-2 rounded-lg hover:bg-[#fdf0ec]"
+                onClick={handleLogout}
                 style={{ fontFamily: "'Outfit', sans-serif" }}
               >
-                Browse
+                Logout
               </button>
               <button
                 className="w-9 h-9 rounded-full bg-[#1a2744] text-white border-none cursor-pointer font-bold text-[0.875rem] flex items-center justify-center hover:bg-[#243356] flex-shrink-0 transition-colors duration-200"
-                onClick={() => navigate("/user/profile")}
+                onClick={() => navigate("/profile")}
                 title="My Profile"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
               >
@@ -160,18 +146,16 @@ export const UserNavbar = () => {
             <Link
               key={link.label}
               to={link.path}
-              className={`px-4 py-3 rounded-[10px] text-[0.9rem] font-medium no-underline transition-colors duration-200 ${
-                isActive(link.path)
-                  ? "bg-[#f0ede8] text-[#1a2744] font-semibold"
-                  : "text-[#3d3730] hover:bg-[#f5f3f0] hover:text-[#1a2744]"
-              }`}
+              className={`px-4 py-3 rounded-[10px] text-[0.9rem] font-medium no-underline transition-colors duration-200 ${isActive(link.path)
+                ? "bg-[#f0ede8] text-[#1a2744] font-semibold"
+                : "text-[#3d3730] hover:bg-[#f5f3f0] hover:text-[#1a2744]"
+                }`}
               onClick={() => setMenuOpen(false)}
             >
               {link.label}
             </Link>
           ))}
-          <Link to="/landlord" className="px-4 py-3 rounded-[10px] text-[0.9rem] font-medium text-[#3d3730] no-underline hover:bg-[#f5f3f0] hover:text-[#1a2744] transition-colors duration-200" onClick={() => setMenuOpen(false)}>For Landlords</Link>
-          <Link to="/admin" className="px-4 py-3 rounded-[10px] text-[0.9rem] font-medium text-[#3d3730] no-underline hover:bg-[#f5f3f0] hover:text-[#1a2744] transition-colors duration-200" onClick={() => setMenuOpen(false)}>Admin</Link>
+          
           {token && (
             <Link to="/user/profile" className="px-4 py-3 rounded-[10px] text-[0.9rem] font-medium text-[#3d3730] no-underline hover:bg-[#f5f3f0] hover:text-[#1a2744] transition-colors duration-200" onClick={() => setMenuOpen(false)}>My Profile</Link>
           )}
@@ -186,8 +170,8 @@ export const UserNavbar = () => {
             </button>
           ) : (
             <>
-              <button className="px-4 py-3 rounded-[10px] text-[0.9rem] font-medium text-[#1a2744] bg-transparent border-none cursor-pointer text-left hover:bg-[#f5f3f0] transition-colors duration-200" onClick={() => { navigate("/"); setMenuOpen(false); }} style={{ fontFamily: "'Outfit', sans-serif" }}>Log In</button>
-              <button className="mx-4 mb-1 py-3 rounded-[8px] text-[0.9rem] font-semibold text-white bg-[#1a2744] border-none cursor-pointer hover:bg-[#243356] transition-colors duration-200" onClick={() => { navigate("/"); setMenuOpen(false); }} style={{ fontFamily: "'Outfit', sans-serif" }}>Sign Up Free</button>
+              <button className="px-4 py-3 rounded-[10px] text-[0.9rem] font-medium text-[#1a2744] bg-transparent border-none cursor-pointer text-left hover:bg-[#f5f3f0] transition-colors duration-200" onClick={() => { navigate("/login"); setMenuOpen(false); }} style={{ fontFamily: "'Outfit', sans-serif" }}>Log In</button>
+              <button className="mx-4 mb-1 py-3 rounded-[8px] text-[0.9rem] font-semibold text-white bg-[#1a2744] border-none cursor-pointer hover:bg-[#243356] transition-colors duration-200" onClick={() => { navigate("/signup"); setMenuOpen(false); }} style={{ fontFamily: "'Outfit', sans-serif" }}>Sign Up Free</button>
             </>
           )}
         </div>
