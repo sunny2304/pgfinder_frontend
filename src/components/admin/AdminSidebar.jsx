@@ -732,7 +732,18 @@ export const AdminSidebar = () => {
                   <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">Review and resolve platform disputes.</p>
                 </div>
                 <div className="flex gap-2.5">
-                  <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(disputes.map(d => ({ id: d._id, status: d.status, description: d.description, booking: d.bookingId })), "disputes.csv")}>Export CSV</BtnSm>
+                  <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(disputes.map(d => ({
+                    id: d._id,
+                    status: d.status,
+                    raised_by: `${d.raisedBy?.firstName || ""} ${d.raisedBy?.lastName || ""}`.trim() || "—",
+                    raised_by_role: d.raisedBy?.role || "—",
+                    raised_against: `${d.raisedAgainst?.firstName || ""} ${d.raisedAgainst?.lastName || ""}`.trim() || "—",
+                    raised_against_role: d.raisedAgainst?.role || "—",
+                    property: d.property?.pgName || "—",
+                    city: d.property?.city || "—",
+                    description: d.description,
+                    date: d.createdAt,
+                  })), "disputes.csv")}>Export CSV</BtnSm>
                 </div>
               </div>
 
@@ -742,6 +753,8 @@ export const AdminSidebar = () => {
                   { label: "Total", val: disputes.length, color: "text-[#1a2744]" },
                   { label: "Open", val: disputes.filter(d => d.status === "open").length, color: "text-[#e05a3a]" },
                   { label: "Resolved", val: disputes.filter(d => d.status === "resolved").length, color: "text-[#2a7c6f]" },
+                  { label: "By Tenants", val: disputes.filter(d => d.raisedBy?.role === "user").length, color: "text-[#3b6bcc]" },
+                  { label: "By Landlords", val: disputes.filter(d => d.raisedBy?.role === "landlord").length, color: "text-[#c8922a]" },
                 ].map(s => (
                   <div key={s.label} className="bg-white border border-[#e2ddd6] rounded-[12px] p-4 shadow-[0_2px_16px_rgba(26,39,68,0.06)]">
                     <div className="text-[0.7rem] font-bold uppercase tracking-[1px] text-[#8a7f74]">{s.label}</div>
@@ -758,31 +771,98 @@ export const AdminSidebar = () => {
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
-                  {disputes.map(d => (
-                    <div key={d._id} className="bg-white border border-[#e2ddd6] rounded-[14px] p-6 shadow-[0_2px_16px_rgba(26,39,68,0.08)]">
-                      <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className={pillClass(d.status)}><PillDot s={d.status} />{d.status}</span>
-                            <span className="text-[0.75rem] text-[#8a7f74]">{fmt(d.createdAt)}</span>
-                          </div>
-                          <p className="text-[0.9rem] text-[#3d3730] mb-2">{d.description || "No description provided."}</p>
-                          <div className="flex gap-4 text-[0.78rem] text-[#8a7f74] flex-wrap">
-                            {d.userId && <span>User: <strong className="text-[#3d3730]">{d.userId?.firstName} {d.userId?.lastName}</strong></span>}
-                            {d.userId?.email && <span>Email: <strong className="text-[#3d3730]">{d.userId.email}</strong></span>}
-                            {d.bookingId?.pgId && <span>Property: <strong className="text-[#3d3730]">{d.bookingId.pgId.pgName} · {d.bookingId.pgId.city}</strong></span>}
-                            <span>Booking: <strong className="text-[#3d3730]">#{(d.bookingId?._id || d.bookingId)?.toString().slice(-6).toUpperCase()}</strong></span>
-                          </div>
+                  {disputes.map(d => {
+                    const raisedBy = d.raisedBy;
+                    const raisedAgainst = d.raisedAgainst;
+                    const prop = d.property;
+                    const isLandlordRaised = raisedBy?.role === "landlord";
+
+                    const RoleBadge = ({ role }) => {
+                      if (!role) return null;
+                      const isLandlord = role === "landlord";
+                      return (
+                        <span className={`text-[0.65rem] font-bold uppercase tracking-[0.8px] py-[2px] px-2 rounded-[5px] ${isLandlord ? "bg-[#fdf6e8] text-[#c8922a]" : "bg-[#eef2fb] text-[#3b6bcc]"}`}>
+                          {isLandlord ? "Landlord" : "Tenant"}
+                        </span>
+                      );
+                    };
+
+                    const PersonCard = ({ person, label }) => (
+                      <div className="flex-1 min-w-[160px] bg-[#faf9f7] border border-[#e2ddd6] rounded-[10px] p-3.5">
+                        <div className="text-[0.67rem] font-bold uppercase tracking-[1px] text-[#8a7f74] mb-1.5">{label}</div>
+                        {person ? (
+                          <>
+                            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                              <span className="text-[0.88rem] font-bold text-[#1a2744]">{person.firstName} {person.lastName}</span>
+                              <RoleBadge role={person.role} />
+                            </div>
+                            <div className="text-[0.77rem] text-[#8a7f74]">{person.email || "—"}</div>
+                          </>
+                        ) : (
+                          <div className="text-[0.83rem] text-[#8a7f74]">—</div>
+                        )}
+                      </div>
+                    );
+
+                    return (
+                      <div
+                        key={d._id}
+                        className={`bg-white border rounded-[14px] p-6 shadow-[0_2px_16px_rgba(26,39,68,0.08)] transition-all duration-300 hover:shadow-[0_8px_40px_rgba(26,39,68,0.12)] ${d.status === "open" ? "border-[#e2ddd6]" : "border-[#e2ddd6] opacity-80"}`}
+                      >
+                        {/* Top row: status + date + property + dispute ID */}
+                        <div className="flex items-center gap-3 mb-4 flex-wrap">
+                          <span className={pillClass(d.status)}><PillDot s={d.status} />{d.status === "open" ? "Open" : "Resolved"}</span>
+                          {/* Who raised it badge */}
+                          <span className={`text-[0.72rem] font-bold py-1 px-2.5 rounded-full ${isLandlordRaised ? "bg-[#fdf6e8] text-[#c8922a]" : "bg-[#eef2fb] text-[#3b6bcc]"}`}>
+                            {isLandlordRaised ? "🏠 Raised by Landlord" : "👤 Raised by Tenant"}
+                          </span>
+                          <span className="text-[0.75rem] text-[#8a7f74] ml-auto">{fmt(d.createdAt)} · <span className="font-semibold text-[#3d3730]">#{d._id?.slice(-8).toUpperCase()}</span></span>
                         </div>
+
+                        {/* Raised By → Against cards */}
+                        <div className="flex items-center gap-3 mb-4 flex-wrap">
+                          <PersonCard person={raisedBy} label="Raised By" />
+
+                          {/* Arrow */}
+                          <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#e05a3a" strokeWidth="2" className="w-5 h-5">
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                              <polyline points="12,5 19,12 12,19" />
+                            </svg>
+                            <span className="text-[0.62rem] font-bold uppercase tracking-[1px] text-[#e05a3a]">Against</span>
+                          </div>
+
+                          <PersonCard person={raisedAgainst} label="Raised Against" />
+
+                          {/* Property info */}
+                          {prop && (
+                            <div className="flex-1 min-w-[160px] bg-[#faf9f7] border border-[#e2ddd6] rounded-[10px] p-3.5">
+                              <div className="text-[0.67rem] font-bold uppercase tracking-[1px] text-[#8a7f74] mb-1.5">Property</div>
+                              <div className="text-[0.88rem] font-bold text-[#1a2744]">{prop.pgName}</div>
+                              <div className="text-[0.77rem] text-[#8a7f74]">{prop.city || "—"}</div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        <div className="bg-[#faf9f7] border border-[#e2ddd6] rounded-[10px] p-3.5 mb-4">
+                          <div className="text-[0.67rem] font-bold uppercase tracking-[1px] text-[#8a7f74] mb-1.5">Complaint</div>
+                          <p className="text-[0.88rem] text-[#3d3730] leading-[1.6]">{d.description || "No description provided."}</p>
+                        </div>
+
+                        {/* Actions */}
                         <div className="flex gap-2 flex-wrap">
-                          <BtnSm cls="bg-[#eef2fb] text-[#3b6bcc] hover:bg-blue-100" onClick={() => setDisputeModal(d)}>Details</BtnSm>
+                          <BtnSm cls="bg-[#eef2fb] text-[#3b6bcc] hover:bg-blue-100" onClick={() => setDisputeModal(d)}>Full Details</BtnSm>
                           {d.status === "open" && (
                             <BtnSm cls="bg-[#e8f5f3] text-[#2a7c6f] hover:bg-[rgba(42,124,111,0.18)]" onClick={() => resolveDispute(d._id)}>Mark Resolved</BtnSm>
                           )}
+                          {d.status === "resolved" && (
+                            <span className="text-[0.78rem] text-[#8a7f74] self-center">✓ Resolved on {fmt(d.updatedAt)}</span>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1022,33 +1102,87 @@ export const AdminSidebar = () => {
 
       {/* Dispute Details Modal */}
       <Modal open={!!disputeModal} onClose={() => setDisputeModal(null)} title="Dispute Details">
-        {disputeModal && (
-          <div>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              {[
-                ["Status", disputeModal.status],
-                ["Created", fmt(disputeModal.createdAt)],
-                ["Dispute ID", `#${disputeModal._id?.slice(-8).toUpperCase()}`],
-                ["Booking", disputeModal.bookingId ? `#${typeof disputeModal.bookingId === "string" ? disputeModal.bookingId.slice(-6).toUpperCase() : disputeModal.bookingId?._id?.slice(-6).toUpperCase()}` : "—"],
-              ].map(([k, v]) => (
-                <div key={k} className="bg-[#faf9f7] rounded-[10px] p-3.5">
-                  <div className="text-[0.7rem] font-bold uppercase tracking-[1px] text-[#8a7f74] mb-1">{k}</div>
-                  <div className="text-[0.88rem] font-semibold text-[#1a2744] capitalize">{v}</div>
+        {disputeModal && (() => {
+          const dm = disputeModal;
+          const raisedBy = dm.raisedBy;
+          const raisedAgainst = dm.raisedAgainst;
+          const prop = dm.property;
+          const isLandlordRaised = raisedBy?.role === "landlord";
+
+          const RoleBadge = ({ role }) => {
+            if (!role) return null;
+            const isLL = role === "landlord";
+            return (
+              <span className={`text-[0.62rem] font-bold uppercase tracking-[0.8px] py-[2px] px-1.5 rounded-[4px] ml-1 ${isLL ? "bg-[#fdf6e8] text-[#c8922a]" : "bg-[#eef2fb] text-[#3b6bcc]"}`}>
+                {isLL ? "Landlord" : "Tenant"}
+              </span>
+            );
+          };
+
+          return (
+            <div>
+              {/* Meta row */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {[
+                  ["Status", <span className="capitalize font-semibold">{dm.status}</span>],
+                  ["Date", fmt(dm.createdAt)],
+                  ["Dispute ID", `#${dm._id?.slice(-8).toUpperCase()}`],
+                  ["Property", prop ? `${prop.pgName}${prop.city ? ` · ${prop.city}` : ""}` : "—"],
+                ].map(([k, v]) => (
+                  <div key={k} className="bg-[#faf9f7] rounded-[10px] p-3">
+                    <div className="text-[0.68rem] font-bold uppercase tracking-[1px] text-[#8a7f74] mb-1">{k}</div>
+                    <div className="text-[0.85rem] text-[#1a2744]">{v}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Raised By / Against */}
+              <div className="mb-1">
+                <div className="text-[0.68rem] font-bold uppercase tracking-[1px] text-[#8a7f74] mb-2">Parties Involved</div>
+                <div className="flex gap-2 items-center flex-wrap">
+                  {/* Raised By */}
+                  <div className={`flex-1 min-w-[130px] rounded-[10px] p-3 border ${isLandlordRaised ? "bg-[#fdf6e8] border-[rgba(200,146,42,0.25)]" : "bg-[#eef2fb] border-[rgba(59,107,204,0.2)]"}`}>
+                    <div className={`text-[0.65rem] font-bold uppercase tracking-[1px] mb-1 ${isLandlordRaised ? "text-[#c8922a]" : "text-[#3b6bcc]"}`}>
+                      ✦ Raised By
+                    </div>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[0.88rem] font-bold text-[#1a2744]">{raisedBy ? `${raisedBy.firstName} ${raisedBy.lastName}` : "—"}</span>
+                      <RoleBadge role={raisedBy?.role} />
+                    </div>
+                    <div className="text-[0.75rem] text-[#8a7f74] mt-0.5">{raisedBy?.email || ""}</div>
+                  </div>
+
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#e05a3a" strokeWidth="2" className="w-5 h-5 flex-shrink-0">
+                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12,5 19,12 12,19" />
+                  </svg>
+
+                  {/* Raised Against */}
+                  <div className="flex-1 min-w-[130px] bg-[#fdf0ec] border border-[rgba(224,90,58,0.2)] rounded-[10px] p-3">
+                    <div className="text-[0.65rem] font-bold uppercase tracking-[1px] text-[#e05a3a] mb-1">Against</div>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[0.88rem] font-bold text-[#1a2744]">{raisedAgainst ? `${raisedAgainst.firstName} ${raisedAgainst.lastName}` : "—"}</span>
+                      <RoleBadge role={raisedAgainst?.role} />
+                    </div>
+                    <div className="text-[0.75rem] text-[#8a7f74] mt-0.5">{raisedAgainst?.email || ""}</div>
+                  </div>
                 </div>
-              ))}
+              </div>
+
+              {/* Description */}
+              <div className="bg-[#faf9f7] rounded-[10px] p-4 mt-4 mb-5">
+                <div className="text-[0.7rem] font-bold uppercase tracking-[1px] text-[#8a7f74] mb-2">Complaint Description</div>
+                <p className="text-[0.88rem] text-[#3d3730] leading-[1.6]">{dm.description || "No description."}</p>
+              </div>
+
+              <div className="flex justify-end gap-2.5">
+                {dm.status === "open" && (
+                  <BtnSm cls="bg-[#e8f5f3] text-[#2a7c6f] hover:bg-[rgba(42,124,111,0.18)]" onClick={() => { resolveDispute(dm._id); setDisputeModal(null); }}>Mark Resolved</BtnSm>
+                )}
+                <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => setDisputeModal(null)}>Close</BtnSm>
+              </div>
             </div>
-            <div className="bg-[#faf9f7] rounded-[10px] p-4 mb-5">
-              <div className="text-[0.7rem] font-bold uppercase tracking-[1px] text-[#8a7f74] mb-2">Description</div>
-              <p className="text-[0.88rem] text-[#3d3730]">{disputeModal.description || "No description."}</p>
-            </div>
-            <div className="flex justify-end gap-2.5">
-              {disputeModal.status === "open" && (
-                <BtnSm cls="bg-[#e8f5f3] text-[#2a7c6f] hover:bg-[rgba(42,124,111,0.18)]" onClick={() => { resolveDispute(disputeModal._id); setDisputeModal(null); }}>Mark Resolved</BtnSm>
-              )}
-              <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => setDisputeModal(null)}>Close</BtnSm>
-            </div>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
 
       {/* Log Details Modal */}

@@ -15,24 +15,100 @@ const monthsDiff = (d1, d2) => {
 const pillCls = (s) => {
   if (!s) return "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[#fdf6e8] text-[#c8922a]";
   const v = s.toLowerCase();
-  if (v === "confirmed" || v === "active" || v === "available")
+  if (v === "confirmed" || v === "active" || v === "available" || v === "open")
     return "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[rgba(42,124,111,0.1)] text-[#2a7c6f]";
-  if (v === "cancelled" || v === "paused")
+  if (v === "cancelled" || v === "paused" || v === "resolved")
     return "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[#fdf0ec] text-[#e05a3a]";
   return "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[#fdf6e8] text-[#c8922a]";
 };
 
 const PillDot = ({ status }) => {
-  const color = !status ? "#c8922a" : status === "confirmed" || status === "active" ? "#2a7c6f" : status === "cancelled" || status === "paused" ? "#e05a3a" : "#c8922a";
+  const color = !status ? "#c8922a"
+    : (status === "confirmed" || status === "active" || status === "open") ? "#2a7c6f"
+    : (status === "cancelled" || status === "paused" || status === "resolved") ? "#e05a3a"
+    : "#c8922a";
   return <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, display: "inline-block", flexShrink: 0 }} />;
 };
 
 const inputCls = "bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] text-[#1a1a1a] text-[0.9rem] py-3 px-3.5 outline-none w-full transition-all duration-300 resize-none focus:border-[#2a7c6f] focus:shadow-[0_0_0_3px_rgba(42,124,111,0.1)] focus:bg-white";
 const labelCls = "text-[0.7rem] font-bold uppercase tracking-[0.9px] text-[#8a7f74] block mb-1.5";
 
-const BtnSm = ({ cls, onClick, children, type = "button" }) => (
-  <button type={type} className={`py-1.5 px-3.5 rounded-[8px] text-[0.78rem] font-semibold cursor-pointer border-none transition-all duration-300 hover:-translate-y-px ${cls}`} style={{ fontFamily: "'Outfit',sans-serif" }} onClick={onClick}>{children}</button>
+const BtnSm = ({ cls, onClick, children, type = "button", disabled }) => (
+  <button
+    type={type}
+    disabled={disabled}
+    className={`py-1.5 px-3.5 rounded-[8px] text-[0.78rem] font-semibold cursor-pointer border-none transition-all duration-300 hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
+    style={{ fontFamily: "'Outfit',sans-serif" }}
+    onClick={onClick}
+  >
+    {children}
+  </button>
 );
+
+// ── Dispute Modal ──────────────────────────────────────────────────────────
+const DisputeModal = ({ booking, onClose, onSubmit, submitting }) => {
+  const [desc, setDesc] = useState("");
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-[20px] shadow-2xl w-full max-w-[480px] mx-4 p-8"
+        style={{ animation: "fadeUp 0.3s ease both" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <h3 className="text-[1.2rem] font-bold text-[#1a2744] mb-1.5" style={{ fontFamily: "'Fraunces',serif" }}>
+          Raise a Dispute
+        </h3>
+        <p className="text-[#8a7f74] text-[0.85rem] mb-5">
+          {booking?.pgId?.pgName || "Property"}{booking?.pgId?.city ? ` · ${booking.pgId.city}` : ""}
+          {booking?.tenantId?.firstName ? ` — Tenant: ${booking.tenantId.firstName} ${booking.tenantId.lastName || ""}` : ""}
+        </p>
+
+        {/* Warning banner */}
+        <div className="bg-[#fdf6e8] border border-[rgba(200,146,42,0.25)] rounded-[10px] p-3.5 mb-5 flex gap-2.5 items-start text-[0.83rem] text-[#c8922a]">
+          <span className="text-[1rem] flex-shrink-0">⚠️</span>
+          <span>Disputes are reviewed by our admin team within 2–3 business days. Only raise a dispute if you have a genuine issue with this tenancy.</span>
+        </div>
+
+        <label className="text-[0.78rem] font-bold text-[#3d3730] block mb-2" style={{ fontFamily: "'Outfit',sans-serif" }}>
+          Describe your issue <span className="text-[#e05a3a]">*</span>
+        </label>
+        <textarea
+          value={desc}
+          onChange={e => setDesc(e.target.value)}
+          placeholder="Explain the issue clearly — e.g. 'Tenant has not paid rent for 2 months despite multiple reminders. Property damage reported during inspection...'"
+          rows={5}
+          className="w-full bg-[#faf9f7] border-[1.5px] border-[#e2ddd6] rounded-[10px] py-3 px-3.5 font-[inherit] text-[0.9rem] text-[#1a1a1a] outline-none resize-none transition-all duration-300 focus:border-[#c8922a]"
+          style={{ fontFamily: "'Outfit',sans-serif" }}
+        />
+        <div className="text-right text-[0.75rem] mt-1 mb-5" style={{ color: desc.length < 20 ? "#e05a3a" : "#8a7f74", fontFamily: "'Outfit',sans-serif" }}>
+          {desc.length} chars {desc.length < 20 ? "(min 20)" : "✓"}
+        </div>
+
+        <div className="flex gap-2.5">
+          <button
+            className="flex-1 py-3 rounded-[10px] bg-[#f0ede8] text-[#3d3730] border-none font-semibold text-[0.93rem] cursor-pointer transition-all duration-300 hover:bg-[#e2ddd6]"
+            style={{ fontFamily: "'Outfit',sans-serif" }}
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            className="flex-1 py-3 rounded-[10px] bg-[#c8922a] text-white border-none font-bold text-[0.93rem] cursor-pointer transition-all duration-300 hover:bg-[#b07d20] disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{ fontFamily: "'Outfit',sans-serif" }}
+            disabled={submitting || desc.trim().length < 20}
+            onClick={() => onSubmit(desc)}
+          >
+            {submitting ? "Submitting…" : "Submit Dispute"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function LandlordDashboard() {
   const navigate = useNavigate();
@@ -41,7 +117,14 @@ export default function LandlordDashboard() {
   const [properties, setProperties] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [myDisputes, setMyDisputes] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Dispute modal state
+  const [disputeModal, setDisputeModal] = useState(null); // booking object
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
+  // Dispute filter
+  const [disputeFilter, setDisputeFilter] = useState("all");
 
   const [form, setForm] = useState({ pgName: "", city: "", area: "", address: "", rent: "", roomType: "single", gender: "unisex", description: "", available: true });
   const [selAmenities, setSelAmenities] = useState([]);
@@ -59,13 +142,17 @@ export default function LandlordDashboard() {
   const loadProperties = () => axios.get("/properties").then(r => { const all = r.data.data || []; setProperties(all.filter(p => p.landlordId?._id === userId || p.landlordId === userId)); }).catch(() => {});
   const loadBookings = () => axios.get("/bookings").then(r => setBookings(r.data || [])).catch(() => {});
   const loadPayments = () => axios.get("/payments").then(r => setPayments(r.data || [])).catch(() => {}).finally(() => setLoading(false));
+  const loadDisputes = () => userId && axios.get(`/users/${userId}/disputes`).then(r => setMyDisputes(r.data || [])).catch(() => {});
 
-  useEffect(() => { loadProperties(); loadBookings(); loadPayments(); }, [userId]);
+  useEffect(() => { loadProperties(); loadBookings(); loadPayments(); loadDisputes(); }, [userId]);
 
   const myPropIds = properties.map(p => p._id);
   const myBookings = bookings.filter(b => myPropIds.includes(b.pgId?._id || b.pgId));
   const pendingBookings = myBookings.filter(b => b.bookingStatus === "pending");
   const myRevenue = payments.filter(p => myPropIds.includes(p.bookingId?.pgId)).reduce((s, p) => s + (p.landlordAmount || p.amount || 0), 0);
+
+  // Open disputes count for badge
+  const openDisputesCount = myDisputes.filter(d => d.status === "open").length;
 
   const updateStatus = async (bookingId, status) => {
     try { await axios.patch(`/bookings/${bookingId}/status`, { status }); toast.success(`Booking ${status}!`); loadBookings(); } catch { toast.error("Action failed"); }
@@ -90,11 +177,49 @@ export default function LandlordDashboard() {
   };
   const handleLogout = () => { localStorage.clear(); toast.success("Logged out"); navigate("/"); };
 
+  // ── Dispute handlers ──────────────────────────────────────────────────────
+  const openDisputeModal = (booking) => setDisputeModal(booking);
+  const closeDisputeModal = () => { setDisputeModal(null); };
+
+  const handleDisputeSubmit = async (description) => {
+    if (!disputeModal) return;
+    setDisputeSubmitting(true);
+    try {
+      await axios.post("/disputes", {
+        bookingId: disputeModal._id,
+        userId,           // landlord's own userId — same field the backend uses
+        description,
+      });
+      toast.success("Dispute raised successfully! Admin will review within 2–3 days.");
+      setDisputeModal(null);
+      loadDisputes();
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to raise dispute";
+      toast.error(msg);
+    } finally {
+      setDisputeSubmitting(false);
+    }
+  };
+
+  // Check if landlord already has open dispute for a booking
+  const getDisputeForBooking = (bookingId) =>
+    myDisputes.find(d => {
+      const bid = d.bookingId?._id || d.bookingId;
+      return bid === bookingId;
+    });
+
+  // Filtered disputes for the disputes tab
+  const filteredDisputes = disputeFilter === "all"
+    ? myDisputes
+    : myDisputes.filter(d => d.status === disputeFilter);
+
+  // ─────────────────────────────────────────────────────────────────────────
   const sidebarLinks = [
     { id: "overview", label: "Dashboard", section: "OVERVIEW", icon: <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" /> },
     { id: "properties", label: "My Properties", section: null, icon: <><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9,22 9,12 15,12 15,22" /></> },
     { id: "bookings", label: "Bookings", section: null, badge: pendingBookings.length, icon: <><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></> },
     { id: "add", label: "Add Property", section: "MANAGE", icon: <><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></> },
+    { id: "disputes", label: "Disputes", section: null, badge: openDisputesCount, icon: <><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></> },
     { id: "messages", label: "Messages", section: null, badge: 5, icon: <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /> },
     { id: "earnings", label: "Earnings", section: "FINANCE", icon: <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></> },
   ];
@@ -115,6 +240,7 @@ export default function LandlordDashboard() {
         .chart-bar:hover { background:rgba(42,124,111,0.45); }
         .chart-bar.highlight { background:rgba(26,39,68,0.5); }
         .ld-sl-active::before { content:''; position:absolute; left:0; top:20%; bottom:20%; width:3px; background:#2a7c6f; border-radius:0 3px 3px 0; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         @media(max-width:900px){
           .ld-sidebar-r { width:58px !important; padding:16px 8px !important; }
           .ld-sidebar-r .ld-sl-text, .ld-sidebar-r .ld-sl-section, .ld-sidebar-r .ld-sl-badge { display:none !important; }
@@ -218,25 +344,25 @@ export default function LandlordDashboard() {
                             <span className="font-medium text-[#3d3730]">{p.pgName}</span>
                             <span className="text-[#8a7f74] font-semibold">{pct}%</span>
                           </div>
-                          <div className="h-[7px] bg-[#f0ede8] rounded-[4px] overflow-hidden">
-                            <div className={`h-full rounded-[4px] transition-all duration-700 ${colors[i % 4]}`} style={{ width: `${pct}%` }} />
+                          <div className="bg-[#f0ede8] rounded-[4px] h-2 overflow-hidden">
+                            <div className={`h-full rounded-[4px] ${colors[i % 4]}`} style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       );
-                    }) : <p className="text-[#8a7f74] text-[0.87rem]">No properties yet.</p>}
+                    }) : <div className="text-[#8a7f74] text-[0.85rem] text-center py-6">No properties yet.</div>}
                   </div>
                 </div>
               </div>
 
-              {/* Recent bookings table */}
-              <div className="bg-white border border-[#e2ddd6] rounded-[14px] shadow-[0_2px_16px_rgba(26,39,68,0.08)] overflow-hidden mb-5">
+              {/* Recent bookings quick table */}
+              <div className="bg-white border border-[#e2ddd6] rounded-[14px] shadow-[0_2px_16px_rgba(26,39,68,0.08)] overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2ddd6]">
                   <h3 className="text-[0.95rem] font-bold text-[#1a2744]">Recent Booking Requests</h3>
-                  <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => setTab("bookings")}>View All</BtnSm>
+                  <button className="text-[#2a7c6f] text-[0.82rem] font-semibold bg-transparent border-none cursor-pointer hover:underline" onClick={() => setTab("bookings")}>View all →</button>
                 </div>
                 <table className="w-full border-collapse">
                   <thead><tr>
-                    {["Tenant", "Property", "Room", "Date", "Status", "Action"].map(h => <th key={h} className={thCls}>{h}</th>)}
+                    {["Tenant", "Property", "Room", "Check-In", "Status", "Action"].map(h => <th key={h} className={thCls}>{h}</th>)}
                   </tr></thead>
                   <tbody>
                     {myBookings.slice(0, 5).map(b => (
@@ -327,22 +453,46 @@ export default function LandlordDashboard() {
                     {myBookings.map(b => {
                       const months = monthsDiff(b.checkInDate, b.checkOutDate);
                       const amount = (b.pgId?.rent || 0) * months;
+                      const existingDispute = getDisputeForBooking(b._id);
+                      const isConfirmed = b.bookingStatus === "confirmed";
                       return (
                         <tr key={b._id} className="hover:bg-[#faf9f7]">
-                          <td className={tdCls}><strong>{b.tenantId?.firstName || "—"} {b.tenantId?.lastName || ""}</strong><br /><span className="text-[#8a7f74] text-[0.75rem]">{b.tenantId?.email}</span></td>
+                          <td className={tdCls}>
+                            <strong>{b.tenantId?.firstName || "—"} {b.tenantId?.lastName || ""}</strong>
+                            <br /><span className="text-[#8a7f74] text-[0.75rem]">{b.tenantId?.email}</span>
+                          </td>
                           <td className={tdCls}>{b.pgId?.pgName || "—"}</td>
                           <td className={tdCls}>{fmt(b.checkInDate)}</td>
                           <td className={tdCls}>{months} month{months !== 1 ? "s" : ""}</td>
                           <td className={tdCls}>₹{amount.toLocaleString()}</td>
                           <td className={tdCls}><span className={pillCls(b.bookingStatus)}><PillDot status={b.bookingStatus} />{b.bookingStatus}</span></td>
                           <td className={tdCls}>
-                            <div className="flex gap-1.5">
+                            <div className="flex gap-1.5 flex-wrap">
                               {b.bookingStatus === "pending" && <>
                                 <BtnSm cls="bg-[#e8f5f3] text-[#2a7c6f] hover:bg-[rgba(42,124,111,0.18)]" onClick={() => updateStatus(b._id, "confirmed")}>Accept</BtnSm>
                                 <BtnSm cls="bg-[#fdf0ec] text-[#e05a3a] hover:bg-orange-100" onClick={() => updateStatus(b._id, "cancelled")}>Decline</BtnSm>
                               </>}
-                              {b.bookingStatus === "confirmed" && <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]">Receipt</BtnSm>}
-                              {b.bookingStatus === "cancelled" && <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]">View</BtnSm>}
+                              {b.bookingStatus !== "pending" && <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]">Details</BtnSm>}
+
+                              {/* ── Raise Dispute — only for confirmed bookings ── */}
+                              {isConfirmed && !existingDispute && (
+                                <BtnSm
+                                  cls="bg-[#fdf6e8] text-[#c8922a] hover:bg-[rgba(200,146,42,0.18)]"
+                                  onClick={() => openDisputeModal(b)}
+                                >
+                                  Raise Dispute
+                                </BtnSm>
+                              )}
+                              {isConfirmed && existingDispute && existingDispute.status === "open" && (
+                                <BtnSm cls="bg-[#f0ede8] text-[#8a7f74]" disabled>
+                                  Dispute Raised
+                                </BtnSm>
+                              )}
+                              {isConfirmed && existingDispute && existingDispute.status === "resolved" && (
+                                <BtnSm cls="bg-[#e8f5f3] text-[#2a7c6f]" disabled>
+                                  Resolved
+                                </BtnSm>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -436,6 +586,136 @@ export default function LandlordDashboard() {
             </div>
           )}
 
+          {/* ══ DISPUTES ══ */}
+          {tab === "disputes" && (
+            <div>
+              {/* Header */}
+              <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+                <div>
+                  <h1 className="text-[1.8rem] font-bold text-[#1a2744]" style={{ fontFamily: "'Fraunces',serif" }}>Disputes</h1>
+                  <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">Raise and track disputes against tenants for your properties.</p>
+                </div>
+              </div>
+
+              {/* Info banner */}
+              <div className="bg-[#fdf6e8] border border-[rgba(200,146,42,0.25)] rounded-[12px] py-3 px-5 mb-6 flex items-center gap-2.5 text-[0.87rem] text-[#c8922a]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                You can raise a dispute against a tenant from the <strong className="mx-1">Bookings</strong> tab for any confirmed booking. Disputes are reviewed by admin within 2–3 business days.
+              </div>
+
+              {/* Filter tabs */}
+              <div className="flex gap-2 mb-6 flex-wrap">
+                {[
+                  { key: "all", label: `All (${myDisputes.length})` },
+                  { key: "open", label: `Open (${myDisputes.filter(d => d.status === "open").length})` },
+                  { key: "resolved", label: `Resolved (${myDisputes.filter(d => d.status === "resolved").length})` },
+                ].map(f => (
+                  <button
+                    key={f.key}
+                    onClick={() => setDisputeFilter(f.key)}
+                    className={`py-[7px] px-[18px] rounded-[20px] border text-[0.83rem] font-semibold cursor-pointer transition-all duration-300 ${disputeFilter === f.key ? "bg-[#1a2744] text-white border-[#1a2744]" : "bg-white text-[#3d3730] border-[#e2ddd6] hover:border-[#1a2744] hover:text-[#1a2744]"}`}
+                    style={{ fontFamily: "'Outfit',sans-serif" }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Disputes list */}
+              {filteredDisputes.length === 0 ? (
+                <div className="bg-white border border-[#e2ddd6] rounded-[14px] shadow-[0_2px_16px_rgba(26,39,68,0.08)] py-20 flex flex-col items-center justify-center text-center">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-14 h-14 text-[#e2ddd6] mb-5">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                  <h3 className="text-[1.2rem] font-bold text-[#1a2744] mb-2" style={{ fontFamily: "'Fraunces',serif" }}>
+                    {disputeFilter === "all" ? "No disputes raised yet" : `No ${disputeFilter} disputes`}
+                  </h3>
+                  <p className="text-[#8a7f74] text-[0.88rem] mb-6 max-w-[340px]">
+                    {disputeFilter === "all"
+                      ? "If you have a genuine issue with a tenant, go to Bookings and raise a dispute on a confirmed booking."
+                      : `You don't have any ${disputeFilter} disputes right now.`}
+                  </p>
+                  {disputeFilter === "all" && (
+                    <button
+                      className="py-3 px-6 rounded-[11px] bg-[#1a2744] text-white border-none text-[0.9rem] font-bold cursor-pointer transition-all duration-300 hover:bg-[#243356] hover:-translate-y-px"
+                      style={{ fontFamily: "'Outfit',sans-serif" }}
+                      onClick={() => setTab("bookings")}
+                    >
+                      Go to Bookings
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {filteredDisputes.map(d => {
+                    const pgName = d.bookingId?.pgId?.pgName || "Property";
+                    const city = d.bookingId?.pgId?.city || "";
+                    const tenantName = d.bookingId?.tenantId
+                      ? `${d.bookingId.tenantId.firstName || ""} ${d.bookingId.tenantId.lastName || ""}`.trim()
+                      : "Tenant";
+                    const tenantEmail = d.bookingId?.tenantId?.email || "";
+                    const isOpen = d.status === "open";
+
+                    return (
+                      <div
+                        key={d._id}
+                        className="bg-white border border-[#e2ddd6] rounded-[14px] p-6 shadow-[0_2px_16px_rgba(26,39,68,0.08)] transition-all duration-300 hover:shadow-[0_8px_40px_rgba(26,39,68,0.13)]"
+                      >
+                        {/* Top row */}
+                        <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
+                          <div>
+                            <h4 className="text-[1rem] font-bold text-[#1a2744]" style={{ fontFamily: "'Fraunces',serif" }}>
+                              {pgName}{city ? ` · ${city}` : ""}
+                            </h4>
+                            <p className="text-[#8a7f74] text-[0.8rem] mt-0.5">
+                              Tenant: <span className="font-semibold text-[#3d3730]">{tenantName}</span>
+                              {tenantEmail && <span className="ml-1.5 text-[#8a7f74]">({tenantEmail})</span>}
+                            </p>
+                          </div>
+                          <span className={pillCls(d.status)}>
+                            <PillDot status={d.status} />
+                            {d.status === "open" ? "Open" : "Resolved"}
+                          </span>
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-[0.88rem] text-[#3d3730] leading-[1.6] mb-4 bg-[#faf9f7] rounded-[9px] p-3.5 border border-[#e2ddd6]">
+                          {d.description}
+                        </p>
+
+                        {/* Meta */}
+                        <div className="flex gap-4 flex-wrap text-[0.77rem] text-[#8a7f74]">
+                          <span>Raised on <strong className="text-[#3d3730]">{fmt(d.createdAt)}</strong></span>
+                          <span>Dispute ID <strong className="text-[#3d3730]">#{d._id?.slice(-8).toUpperCase()}</strong></span>
+                          {!isOpen && d.updatedAt && (
+                            <span>Resolved on <strong className="text-[#3d3730]">{fmt(d.updatedAt)}</strong></span>
+                          )}
+                        </div>
+
+                        {/* Status note */}
+                        {isOpen && (
+                          <div className="mt-3.5 bg-[#fdf6e8] border border-[rgba(200,146,42,0.2)] rounded-[9px] py-2.5 px-4 text-[0.8rem] text-[#c8922a] flex items-center gap-2">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12,6 12,12 16,14" /></svg>
+                            Under review by admin — expected resolution within 2–3 business days.
+                          </div>
+                        )}
+                        {!isOpen && (
+                          <div className="mt-3.5 bg-[rgba(42,124,111,0.07)] border border-[rgba(42,124,111,0.2)] rounded-[9px] py-2.5 px-4 text-[0.8rem] text-[#2a7c6f] flex items-center gap-2">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20,6 9,17 4,12" /></svg>
+                            This dispute has been resolved by admin.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ══ MESSAGES ══ */}
           {tab === "messages" && (
             <div>
@@ -444,9 +724,7 @@ export default function LandlordDashboard() {
                 <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">Communicate with your tenants.</p>
               </div>
               <div className="bg-white border border-[#e2ddd6] rounded-[14px] shadow-[0_2px_16px_rgba(26,39,68,0.08)] overflow-hidden">
-                {["Coming soon — messaging feature is under development."].map((msg, i) => (
-                  <div key={i} className="px-6 py-14 text-center text-[#8a7f74]">{msg}</div>
-                ))}
+                <div className="px-6 py-14 text-center text-[#8a7f74]">Coming soon — messaging feature is under development.</div>
               </div>
             </div>
           )}
@@ -456,6 +734,16 @@ export default function LandlordDashboard() {
 
         </main>
       </div>
+
+      {/* ══ DISPUTE MODAL ══ */}
+      {disputeModal && (
+        <DisputeModal
+          booking={disputeModal}
+          onClose={closeDisputeModal}
+          onSubmit={handleDisputeSubmit}
+          submitting={disputeSubmitting}
+        />
+      )}
     </>
   );
 }
