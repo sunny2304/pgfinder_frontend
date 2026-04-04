@@ -79,6 +79,67 @@ const SelectField = ({ label, value, onChange, options }) => (
   </div>
 );
 
+// ── Reusable Paginator ────────────────────────────────────────────────────
+const Paginator = ({ page, total, pageSize, onPage }) => {
+  const totalPages = Math.ceil(total / pageSize);
+  if (totalPages <= 1) return null;
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+
+  // Build page number list with ellipsis
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= page - 1 && i <= page + 1)) pages.push(i);
+    else if (pages[pages.length - 1] !== "…") pages.push("…");
+  }
+
+  const btnBase = "min-w-[34px] h-[34px] flex items-center justify-center rounded-[8px] text-[0.8rem] font-semibold cursor-pointer border transition-all duration-200 select-none";
+
+  return (
+    <div className="flex items-center justify-between flex-wrap gap-3 px-6 py-4 border-t border-[#e2ddd6] bg-[#faf9f7]">
+      <span className="text-[0.78rem] text-[#8a7f74]" style={{ fontFamily: "'Outfit',sans-serif" }}>
+        Showing <strong className="text-[#3d3730]">{from}–{to}</strong> of <strong className="text-[#3d3730]">{total}</strong>
+      </span>
+      <div className="flex items-center gap-1">
+        {/* Prev */}
+        <button
+          className={`${btnBase} px-2 ${page === 1 ? "border-[#e2ddd6] text-[#c9c2bb] cursor-not-allowed bg-white" : "border-[#e2ddd6] text-[#3d3730] bg-white hover:bg-[#f0ede8] hover:border-[#1a2744]"}`}
+          style={{ fontFamily: "'Outfit',sans-serif" }}
+          onClick={() => page > 1 && onPage(page - 1)}
+          disabled={page === 1}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><polyline points="15,18 9,12 15,6" /></svg>
+        </button>
+
+        {pages.map((p, i) =>
+          p === "…" ? (
+            <span key={`ellipsis-${i}`} className="min-w-[34px] h-[34px] flex items-center justify-center text-[0.8rem] text-[#8a7f74]">…</span>
+          ) : (
+            <button
+              key={p}
+              className={`${btnBase} ${p === page ? "bg-[#1a2744] text-white border-[#1a2744]" : "bg-white border-[#e2ddd6] text-[#3d3730] hover:bg-[#f0ede8] hover:border-[#1a2744]"}`}
+              style={{ fontFamily: "'Outfit',sans-serif" }}
+              onClick={() => onPage(p)}
+            >
+              {p}
+            </button>
+          )
+        )}
+
+        {/* Next */}
+        <button
+          className={`${btnBase} px-2 ${page === totalPages ? "border-[#e2ddd6] text-[#c9c2bb] cursor-not-allowed bg-white" : "border-[#e2ddd6] text-[#3d3730] bg-white hover:bg-[#f0ede8] hover:border-[#1a2744]"}`}
+          style={{ fontFamily: "'Outfit',sans-serif" }}
+          onClick={() => page < totalPages && onPage(page + 1)}
+          disabled={page === totalPages}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><polyline points="9,18 15,12 9,6" /></svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // ── Main Component ─────────────────────────────────────────────────────────
 export const AdminSidebar = () => {
   const navigate = useNavigate();
@@ -110,6 +171,15 @@ export const AdminSidebar = () => {
   const [editProp, setEditProp] = useState({});
   const [newUser, setNewUser] = useState({ firstName: "", lastName: "", email: "", password: "", role: "user" });
 
+  // ── Pagination state (1-indexed, resets to 1 on search) ──
+  const [userPage, setUserPage] = useState(1);
+  const [propPage, setPropPage] = useState(1);
+  const [bookingPage, setBookingPage] = useState(1);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [logPage, setLogPage] = useState(1);
+  const [disputePage, setDisputePage] = useState(1);
+  const PAGE_SIZES = { users: 10, props: 10, bookings: 10, payments: 15, logs: 15, disputes: 8 };
+
   // ─────────────────────────────────────────────────────────────────────────
   // DATA LOADING
   // ─────────────────────────────────────────────────────────────────────────
@@ -135,6 +205,17 @@ export const AdminSidebar = () => {
 
   const loadUsers = async () => {
     try {
+      // Primary: fetch all users directly from the /users endpoint
+      const res = await axios.get("/users");
+      const directUsers = res.data?.data || res.data || [];
+      if (directUsers.length > 0) {
+        setUsers(directUsers);
+        return;
+      }
+    } catch { /* endpoint may not exist — fall through to ref-based approach */ }
+
+    // Fallback: reconstruct from bookings + properties populated refs
+    try {
       const [bookRes, propRes] = await Promise.all([
         axios.get("/bookings"),
         axios.get("/properties"),
@@ -142,13 +223,13 @@ export const AdminSidebar = () => {
       const seen = new Set();
       const us = [];
       (bookRes.data || []).forEach(b => {
-        if (b.tenantId && !seen.has(b.tenantId._id)) {
+        if (b.tenantId?._id && !seen.has(b.tenantId._id)) {
           seen.add(b.tenantId._id);
           us.push({ ...b.tenantId, role: b.tenantId.role || "user" });
         }
       });
       (propRes.data?.data || []).forEach(p => {
-        if (p.landlordId && !seen.has(p.landlordId._id)) {
+        if (p.landlordId?._id && !seen.has(p.landlordId._id)) {
           seen.add(p.landlordId._id);
           us.push({ ...p.landlordId, role: p.landlordId.role || "landlord" });
         }
@@ -330,9 +411,21 @@ export const AdminSidebar = () => {
   const pendingBookings = bookings.filter(b => b.bookingStatus === "pending").length;
   const openDisputes = disputes.filter(d => d.status === "open").length;
 
+  // ── Filtered datasets ──
   const filteredUsers = users.filter(u => !userSearch || `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(userSearch.toLowerCase()));
   const filteredProps = properties.filter(p => !propSearch || `${p.pgName} ${p.city} ${p.area}`.toLowerCase().includes(propSearch.toLowerCase()));
   const filteredBookings = bookings.filter(b => !bookingSearch || `${b.tenantId?.firstName} ${b.pgId?.pgName}`.toLowerCase().includes(bookingSearch.toLowerCase()));
+  // Disputes: LIFO — newest first
+  const sortedDisputes = [...disputes].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  // ── Paginated slices ──
+  const paginate = (arr, page, size) => arr.slice((page - 1) * size, page * size);
+  const pagedUsers    = paginate(filteredUsers,   userPage,    PAGE_SIZES.users);
+  const pagedProps    = paginate(filteredProps,    propPage,    PAGE_SIZES.props);
+  const pagedBookings = paginate(filteredBookings, bookingPage, PAGE_SIZES.bookings);
+  const pagedPayments = paginate(payments,         paymentPage, PAGE_SIZES.payments);
+  const pagedLogs     = paginate(logs,             logPage,     PAGE_SIZES.logs);
+  const pagedDisputes = paginate(sortedDisputes,   disputePage, PAGE_SIZES.disputes);
 
   const sidebarLinks = [
     { id: "overview", label: "Dashboard", section: "OVERVIEW", icon: <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" /> },
@@ -534,7 +627,7 @@ export const AdminSidebar = () => {
                   <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">Manage all tenants and landlords on the platform.</p>
                 </div>
                 <div className="flex gap-2.5 flex-wrap">
-                  <input className="bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] py-2 px-3.5 text-[0.85rem] text-[#1a1a1a] outline-none transition-all duration-300 focus:border-[#2a7c6f]" placeholder="Search users…" value={userSearch} onChange={e => setUserSearch(e.target.value)} style={{ fontFamily: "'Outfit',sans-serif" }} />
+                  <input className="bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] py-2 px-3.5 text-[0.85rem] text-[#1a1a1a] outline-none transition-all duration-300 focus:border-[#2a7c6f]" placeholder="Search users…" value={userSearch} onChange={e => { setUserSearch(e.target.value); setUserPage(1); }} style={{ fontFamily: "'Outfit',sans-serif" }} />
                   <BtnSm cls="bg-[#1a2744] text-white hover:bg-[#243356]" onClick={() => setAddUserModal(true)}>+ Add User</BtnSm>
                   <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(users.map(u => ({ id: u._id, name: `${u.firstName} ${u.lastName}`, email: u.email, role: u.role, status: u.status })), "users.csv")}>Export CSV</BtnSm>
                 </div>
@@ -560,7 +653,7 @@ export const AdminSidebar = () => {
                   <table className="w-full border-collapse">
                     <thead><tr>{["Name", "Email", "Role", "Status", "Joined", "Actions"].map(h => <th key={h} className={thCls}>{h}</th>)}</tr></thead>
                     <tbody>
-                      {filteredUsers.map(u => (
+                      {pagedUsers.map(u => (
                         <tr key={u._id} className="hover:bg-[#faf9f7]">
                           <td className={tdCls}><strong>{u.firstName} {u.lastName}</strong></td>
                           <td className={`${tdCls} text-[#8a7f74]`}>{u.email}</td>
@@ -568,7 +661,7 @@ export const AdminSidebar = () => {
                             <span className={u.role === "landlord" ? "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[#fdf6e8] text-[#c8922a]" : u.role === "admin" ? "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[rgba(26,39,68,0.1)] text-[#1a2744]" : "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[#eef2fb] text-[#3b6bcc]"}>{u.role}</span>
                           </td>
                           <td className={tdCls}><span className={pillClass(u.status || "active")}><PillDot s={u.status || "active"} />{u.status || "active"}</span></td>
-                          <td className={`${tdCls} text-[#8a7f74]`}>{fmt(u.createdAt)}</td>
+                          <td className={`${tdCls} text-[#8a7f74]`}>{u.createdAt ? fmt(u.createdAt) : "—"}</td>
                           <td className={tdCls}>
                             <div className="flex gap-1.5 flex-wrap">
                               <BtnSm cls="bg-[#eef2fb] text-[#3b6bcc] hover:bg-blue-100" onClick={() => setUserViewModal(u)}>View</BtnSm>
@@ -585,6 +678,7 @@ export const AdminSidebar = () => {
                     </tbody>
                   </table>
                 </div>
+                <Paginator page={userPage} total={filteredUsers.length} pageSize={PAGE_SIZES.users} onPage={setUserPage} />
               </div>
             </div>
           )}
@@ -598,7 +692,7 @@ export const AdminSidebar = () => {
                   <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">Manage all listed PG accommodations.</p>
                 </div>
                 <div className="flex gap-2.5 flex-wrap">
-                  <input className="bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] py-2 px-3.5 text-[0.85rem] text-[#1a1a1a] outline-none transition-all duration-300 focus:border-[#2a7c6f]" placeholder="Search properties…" value={propSearch} onChange={e => setPropSearch(e.target.value)} style={{ fontFamily: "'Outfit',sans-serif" }} />
+                  <input className="bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] py-2 px-3.5 text-[0.85rem] text-[#1a1a1a] outline-none transition-all duration-300 focus:border-[#2a7c6f]" placeholder="Search properties…" value={propSearch} onChange={e => { setPropSearch(e.target.value); setPropPage(1); }} style={{ fontFamily: "'Outfit',sans-serif" }} />
                   <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(properties.map(p => ({ id: p._id, name: p.pgName, city: p.city, rent: p.rent, available: p.available })), "properties.csv")}>Export CSV</BtnSm>
                 </div>
               </div>
@@ -623,7 +717,7 @@ export const AdminSidebar = () => {
                   <table className="w-full border-collapse">
                     <thead><tr>{["Property Name", "Landlord", "Location", "Rent", "Gender", "Status", "Actions"].map(h => <th key={h} className={thCls}>{h}</th>)}</tr></thead>
                     <tbody>
-                      {filteredProps.map(p => (
+                      {pagedProps.map(p => (
                         <tr key={p._id} className="hover:bg-[#faf9f7]">
                           <td className={tdCls}><strong>{p.pgName}</strong></td>
                           <td className={tdCls}>{p.landlordId?.firstName || "—"} {p.landlordId?.lastName || ""}</td>
@@ -652,6 +746,7 @@ export const AdminSidebar = () => {
                     </tbody>
                   </table>
                 </div>
+                <Paginator page={propPage} total={filteredProps.length} pageSize={PAGE_SIZES.props} onPage={setPropPage} />
               </div>
             </div>
           )}
@@ -665,7 +760,7 @@ export const AdminSidebar = () => {
                   <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">Complete booking history across the platform.</p>
                 </div>
                 <div className="flex gap-2.5 flex-wrap">
-                  <input className="bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] py-2 px-3.5 text-[0.85rem] text-[#1a1a1a] outline-none transition-all duration-300 focus:border-[#2a7c6f]" placeholder="Search bookings…" value={bookingSearch} onChange={e => setBookingSearch(e.target.value)} style={{ fontFamily: "'Outfit',sans-serif" }} />
+                  <input className="bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] py-2 px-3.5 text-[0.85rem] text-[#1a1a1a] outline-none transition-all duration-300 focus:border-[#2a7c6f]" placeholder="Search bookings…" value={bookingSearch} onChange={e => { setBookingSearch(e.target.value); setBookingPage(1); }} style={{ fontFamily: "'Outfit',sans-serif" }} />
                   <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(bookings.map(b => ({ id: b._id, tenant: b.tenantId?.firstName, property: b.pgId?.pgName, status: b.bookingStatus, checkIn: b.checkInDate, checkOut: b.checkOutDate })), "bookings.csv")}>Export CSV</BtnSm>
                 </div>
               </div>
@@ -690,7 +785,7 @@ export const AdminSidebar = () => {
                   <table className="w-full border-collapse">
                     <thead><tr>{["Tenant", "Property", "Check-In", "Check-Out", "Room", "Status", "Action"].map(h => <th key={h} className={thCls}>{h}</th>)}</tr></thead>
                     <tbody>
-                      {filteredBookings.map(b => (
+                      {pagedBookings.map(b => (
                         <tr key={b._id} className="hover:bg-[#faf9f7]">
                           <td className={tdCls}>
                             <strong>{b.tenantId?.firstName || "—"} {b.tenantId?.lastName || ""}</strong>
@@ -719,6 +814,7 @@ export const AdminSidebar = () => {
                     </tbody>
                   </table>
                 </div>
+                <Paginator page={bookingPage} total={filteredBookings.length} pageSize={PAGE_SIZES.bookings} onPage={setBookingPage} />
               </div>
             </div>
           )}
@@ -771,7 +867,7 @@ export const AdminSidebar = () => {
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
-                  {disputes.map(d => {
+                  {pagedDisputes.map(d => {
                     const raisedBy = d.raisedBy;
                     const raisedAgainst = d.raisedAgainst;
                     const prop = d.property;
