@@ -167,13 +167,13 @@ const SavedPgs = () => {
                     <div className="flex gap-2 mt-3.5">
                       <button
                         className="flex-1 py-2.5 rounded-[9px] border border-[#e2ddd6] bg-white text-[#1a2744] text-[0.83rem] font-semibold cursor-pointer transition-all duration-300 hover:border-[#1a2744] hover:bg-[#f0ede8]"
-                        onClick={() => navigate(`/user/property/${p._id}`)}
+                        onClick={() => navigate(`/property/${p._id}`)}
                       >
                         View Details
                       </button>
                       <button
                         className="flex-1 py-2.5 rounded-[9px] border-none bg-[#2a7c6f] text-white text-[0.83rem] font-bold cursor-pointer transition-all duration-300 hover:bg-[#3a9e8e]"
-                        onClick={() => navigate(`/user/property/${p._id}`)}
+                        onClick={() => navigate(`/property/${p._id}`)}
                       >
                         Book Now
                       </button>
@@ -202,7 +202,7 @@ const SavedPgs = () => {
             </p>
             <button
               className="py-3 px-7 rounded-[11px] bg-[#2a7c6f] text-white border-none text-[0.93rem] font-bold cursor-pointer transition-all duration-300 hover:bg-[#3a9e8e] hover:-translate-y-px"
-              onClick={() => navigate("/user/browse")}
+              onClick={() => navigate("/browse")}
             >
               Browse PGs
             </button>

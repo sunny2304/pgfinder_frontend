@@ -107,6 +107,26 @@ const CSS = `
 .sp-confirmed{background:rgba(42,124,111,0.1);color:var(--teal);}
 .sp-cancelled{background:var(--coral-pale);color:var(--coral);}
 
+/* Image Gallery / Slider */
+.gallery-hero{position:relative;height:420px;background:var(--navy);overflow:hidden;}
+.gallery-main-img{width:100%;height:100%;object-fit:cover;transition:opacity 0.35s ease;}
+.gallery-hero-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(26,39,68,0.55) 100%);pointer-events:none;}
+.gallery-nav-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.92);border:none;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;z-index:3;backdrop-filter:blur(6px);}
+.gallery-nav-btn:hover{background:#fff;transform:translateY(-50%) scale(1.08);}
+.gallery-nav-btn.left{left:16px;}
+.gallery-nav-btn.right{right:16px;}
+.gallery-dots{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:3;}
+.gallery-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.5);cursor:pointer;transition:all 0.2s;border:none;}
+.gallery-dot.active{background:#fff;width:20px;border-radius:4px;}
+.gallery-counter{position:absolute;bottom:14px;right:16px;background:rgba(0,0,0,0.5);color:#fff;font-size:0.72rem;font-weight:600;padding:4px 10px;border-radius:20px;z-index:3;backdrop-filter:blur(4px);font-family:'Outfit',sans-serif;}
+.gallery-thumbs{display:flex;gap:8px;padding:10px 0 4px;overflow-x:auto;scrollbar-width:none;}
+.gallery-thumbs::-webkit-scrollbar{display:none;}
+.gallery-thumb{width:72px;height:54px;flex-shrink:0;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s;opacity:0.7;}
+.gallery-thumb.active{border-color:var(--teal);opacity:1;}
+.gallery-thumb:hover{opacity:1;}
+.gallery-thumb img{width:100%;height:100%;object-fit:cover;}
+.no-image-hero{height:420px;background:linear-gradient(135deg,var(--navy) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:rgba(255,255,255,0.6);font-family:'Outfit',sans-serif;}
+
 /* Loading */
 .skel{background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);
   background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
@@ -119,12 +139,7 @@ const CSS = `
 }
 `;
 
-const PG_IMAGES = [
-  "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=1200&q=80",
-  "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200&q=80",
-  "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200&q=80",
-  "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&q=80",
-];
+
 
 const AMENITY_ICONS = { wifi: "", meals: "", laundry: "", ac: "", gym: "", parking: "", security: "" };
 const GENDER_MAP = { male: "Boys Only", female: "Girls Only", unisex: "Co-ed / Unisex" };
@@ -137,6 +152,8 @@ const PropertyDetails = () => {
   const [property, setProperty] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [propertyImages, setPropertyImages] = useState([]);
+  const [activeSlide, setActiveSlide] = useState(0);
 
   // Booking form
   const [checkInDate, setCheckInDate] = useState("");
@@ -155,12 +172,17 @@ const PropertyDetails = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [propRes, revRes] = await Promise.allSettled([
+        const [propRes, revRes, imgRes] = await Promise.allSettled([
           axios.get(`/properties/${id}`),
           axios.get(`/properties/${id}/reviews`),
+          axios.get(`/propertyimage/${id}`),
         ]);
         if (propRes.status === "fulfilled") setProperty(propRes.value.data);
         if (revRes.status === "fulfilled") setReviews(revRes.value.data || []);
+        if (imgRes.status === "fulfilled") {
+          const imgs = (imgRes.value.data?.images || []).map(img => img.imageUrl).filter(Boolean);
+          setPropertyImages(imgs);
+        }
       } catch {
         toast.error("Failed to load property");
       } finally {
@@ -243,27 +265,78 @@ const PropertyDetails = () => {
     );
   }
 
-  const imgSrc = PG_IMAGES[property.pgName?.length % PG_IMAGES.length] || PG_IMAGES[0];
   const rating = (4.2 + (property.pgName?.length % 8) * 0.1).toFixed(1);
+
+  const prevSlide = () => setActiveSlide(i => (i - 1 + propertyImages.length) % propertyImages.length);
+  const nextSlide = () => setActiveSlide(i => (i + 1) % propertyImages.length);
 
   return (
     <>
       <style>{CSS}</style>
       <div style={{ background: "var(--bg)", minHeight: "calc(100vh - 68px)", paddingBottom: 80 }}>
 
-        {/* ── HERO ── */}
-        <div className="detail-hero">
-          <img src={imgSrc} alt={property.pgName} onError={e => { e.target.style.display = "none"; }} />
-          <div className="detail-hero-overlay" />
-          <div className="detail-hero-badges">
-            <span className="prop-badge badge-verified">Verified</span>
-            {property.available && <span className="prop-badge badge-top">Available</span>}
+        {/* ── IMAGE GALLERY ── */}
+        {propertyImages.length > 0 ? (
+          <div className="gallery-hero">
+            <img
+              src={propertyImages[activeSlide]}
+              alt={`${property.pgName} - photo ${activeSlide + 1}`}
+              className="gallery-main-img"
+              onError={e => { e.target.style.display = "none"; }}
+            />
+            <div className="gallery-hero-overlay" />
+            {/* Badges */}
+            <div className="detail-hero-badges">
+              <span className="prop-badge badge-verified">Verified</span>
+              {property.available && <span className="prop-badge badge-top">Available</span>}
+            </div>
+            {/* Back button */}
+            <button className="detail-back" onClick={() => navigate(-1)}>← Back to listings</button>
+            {/* Prev/Next arrows */}
+            {propertyImages.length > 1 && (
+              <>
+                <button className="gallery-nav-btn left" onClick={prevSlide} aria-label="Previous">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a2744" strokeWidth="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+                </button>
+                <button className="gallery-nav-btn right" onClick={nextSlide} aria-label="Next">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a2744" strokeWidth="2.5"><polyline points="9,6 15,12 9,18"/></svg>
+                </button>
+                {/* Dots */}
+                <div className="gallery-dots">
+                  {propertyImages.map((_, i) => (
+                    <button key={i} className={`gallery-dot${i === activeSlide ? " active" : ""}`} onClick={() => setActiveSlide(i)} aria-label={`Go to photo ${i+1}`} />
+                  ))}
+                </div>
+                {/* Counter */}
+                <div className="gallery-counter">{activeSlide + 1} / {propertyImages.length}</div>
+              </>
+            )}
           </div>
-          <button className="detail-back" onClick={() => navigate(-1)}>← Back to listings</button>
-        </div>
+        ) : (
+          <div className="no-image-hero">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+            <span style={{fontSize:"0.9rem"}}>No images uploaded yet</span>
+            {/* Badges + back on no-image hero */}
+            <div className="detail-hero-badges" style={{top:20,left:20,position:"absolute",display:"flex",gap:8}}>
+              <span className="prop-badge badge-verified">Verified</span>
+              {property.available && <span className="prop-badge badge-top">Available</span>}
+            </div>
+            <button className="detail-back" onClick={() => navigate(-1)}>← Back to listings</button>
+          </div>
+        )}
 
         {/* ── CONTENT ── */}
         <div className="detail-wrap">
+          {/* Thumbnail strip */}
+          {propertyImages.length > 1 && (
+            <div className="gallery-thumbs" style={{marginBottom:8}}>
+              {propertyImages.map((url, i) => (
+                <div key={i} className={`gallery-thumb${i === activeSlide ? " active" : ""}`} onClick={() => setActiveSlide(i)}>
+                  <img src={url} alt={`Thumbnail ${i+1}`} onError={e=>{e.target.style.display="none";}}/>
+                </div>
+              ))}
+            </div>
+          )}
           {/* Booking status banner if came from My Bookings */}
           {bookingStatus && (
             <div style={{ marginBottom: 20, padding: "12px 20px", background: bookingStatus === "confirmed" ? "var(--teal-pale)" : bookingStatus === "cancelled" ? "var(--coral-pale)" : "var(--gold-pale)", borderRadius: 12, border: `1px solid ${bookingStatus === "confirmed" ? "rgba(42,124,111,0.3)" : bookingStatus === "cancelled" ? "rgba(224,90,58,0.3)" : "rgba(200,146,42,0.3)"}`, display: "flex", alignItems: "center", gap: 10, fontFamily: "'Outfit',sans-serif", fontSize: "0.88rem", color: "var(--text2)" }}>
@@ -331,19 +404,27 @@ const PropertyDetails = () => {
               {/* Reviews */}
               <div className="detail-section-title">Reviews</div>
               {reviews.length > 0 ? (
-                reviews.slice(0, 4).map((r, i) => (
+                reviews.slice(0, 6).map((r, i) => {
+                  // After the ReviewController fix, populated field is `userId`
+                  // Support both old docs (r.user) and new docs (r.userId) for backward compatibility
+                  const reviewer = r.userId || r.user || {};
+                  const firstName = reviewer?.firstName || "Tenant";
+                  const lastName = reviewer?.lastName || "";
+                  const initial = firstName[0]?.toUpperCase() || "T";
+                  return (
                   <div key={i} className="review-card">
                     <div className="review-header">
-                      <div className="review-ava">{r.user?.firstName?.[0]?.toUpperCase() || "U"}</div>
+                      <div className="review-ava" style={{background: ["#1a2744","#2a7c6f","#3b6bcc","#c8922a","#e05a3a"][i%5]}}>{initial}</div>
                       <div>
-                        <div className="review-name">{r.user?.firstName} {r.user?.lastName}</div>
+                        <div className="review-name">{firstName} {lastName}</div>
                         <div className="review-date">{new Date(r.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}</div>
                       </div>
-                      <div className="review-stars">{"★".repeat(r.rating || 5)}</div>
+                      <div className="review-stars">{"★".repeat(r.rating || 5)}{"☆".repeat(5-(r.rating||5))}</div>
                     </div>
                     <div className="review-text">{r.reviewText}</div>
                   </div>
-                ))
+                  );
+                })
               ) : (
                 <div style={{ color: "var(--muted)", fontSize: "0.87rem", fontFamily: "'Outfit',sans-serif", padding: "12px 0" }}>No reviews yet. Be the first to stay here!</div>
               )}
