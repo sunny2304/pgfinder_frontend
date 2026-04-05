@@ -34,7 +34,7 @@ export const BrowsePG = () => {
 
   const AMENITY_OPTIONS = ["wifi", "meals", "laundry", "ac", "gym", "parking", "security"];
 
-  const fetchProperties = async () => {
+  const fetchProperties = async (currentSort = sortBy) => {
     setLoading(true);
     try {
       const params = {};
@@ -45,9 +45,9 @@ export const BrowsePG = () => {
       if (selAmenities.length) params.amenities = selAmenities.join(",");
       const res = await axios.get("/properties", { params });
       let data = res.data.data || [];
-      if (sortBy === "low") data = [...data].sort((a, b) => a.rent - b.rent);
-      else if (sortBy === "high") data = [...data].sort((a, b) => b.rent - a.rent);
-      else if (sortBy === "newest") data = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      if (currentSort === "low") data = [...data].sort((a, b) => a.rent - b.rent);
+      else if (currentSort === "high") data = [...data].sort((a, b) => b.rent - a.rent);
+      else if (currentSort === "newest") data = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setProperties(data);
     } catch {
       toast.error("Failed to load properties");
@@ -62,8 +62,8 @@ export const BrowsePG = () => {
     setSelAmenities((prev) => prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]);
 
   const clearFilters = () => {
-    setLocation(""); setMinPrice(""); setMaxPrice(""); setGender(""); setSelAmenities([]);
-    setTimeout(fetchProperties, 0);
+    setLocation(""); setMinPrice(""); setMaxPrice(""); setGender(""); setSelAmenities([]); setSortBy("relevance");
+    setTimeout(() => fetchProperties("relevance"), 0);
   };
 
   const toggleWishlist = (e, propId) => {
@@ -195,7 +195,7 @@ export const BrowsePG = () => {
             </div>
             <select
               value={sortBy}
-              onChange={(e) => { setSortBy(e.target.value); fetchProperties(); }}
+              onChange={(e) => { const val = e.target.value; setSortBy(val); fetchProperties(val); }}
               className="bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] py-2 px-3.5 text-[0.85rem] text-[#3d3730] outline-none cursor-pointer transition-all duration-300 focus:border-[#2a7c6f]"
               style={{ fontFamily: "'Outfit', sans-serif" }}
             >

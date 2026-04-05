@@ -160,7 +160,9 @@ const MyBookings = () => {
   const fetchBookings = async () => {
     try {
       const res = await axios.get(`/users/${userId}/bookings`);
-      setBookings(res.data || []);
+      // LIFO: newest booking first
+      const sorted = [...(res.data || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setBookings(sorted);
     } catch {
       toast.error("Failed to load bookings");
     } finally {

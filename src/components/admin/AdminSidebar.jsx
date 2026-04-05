@@ -205,11 +205,15 @@ export const AdminSidebar = () => {
 
   const loadUsers = async () => {
     try {
-      // Primary: fetch all users directly from the /users endpoint
-      const res = await axios.get("/users");
+      // Always send auth token so the backend returns all users (not just public-facing ones)
+      const token = localStorage.getItem("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await axios.get("/users", { headers });
       const directUsers = res.data?.data || res.data || [];
       if (directUsers.length > 0) {
-        setUsers(directUsers);
+        // Sort newest first (LIFO by createdAt)
+        const sorted = [...directUsers].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setUsers(sorted);
         return;
       }
     } catch { /* endpoint may not exist — fall through to ref-based approach */ }
@@ -411,10 +415,17 @@ export const AdminSidebar = () => {
   const pendingBookings = bookings.filter(b => b.bookingStatus === "pending").length;
   const openDisputes = disputes.filter(d => d.status === "open").length;
 
-  // ── Filtered datasets ──
+  // ── Filtered datasets — all sorted LIFO (newest first) ──
   const filteredUsers = users.filter(u => !userSearch || `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(userSearch.toLowerCase()));
   const filteredProps = properties.filter(p => !propSearch || `${p.pgName} ${p.city} ${p.area}`.toLowerCase().includes(propSearch.toLowerCase()));
-  const filteredBookings = bookings.filter(b => !bookingSearch || `${b.tenantId?.firstName} ${b.pgId?.pgName}`.toLowerCase().includes(bookingSearch.toLowerCase()));
+  // Bookings: LIFO — newest first
+  const filteredBookings = [...bookings]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .filter(b => !bookingSearch || `${b.tenantId?.firstName} ${b.pgId?.pgName}`.toLowerCase().includes(bookingSearch.toLowerCase()));
+  // Payments: LIFO — newest first
+  const sortedPayments = [...payments].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Logs: LIFO — newest first
+  const sortedLogs = [...logs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   // Disputes: LIFO — newest first
   const sortedDisputes = [...disputes].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -423,8 +434,8 @@ export const AdminSidebar = () => {
   const pagedUsers    = paginate(filteredUsers,   userPage,    PAGE_SIZES.users);
   const pagedProps    = paginate(filteredProps,    propPage,    PAGE_SIZES.props);
   const pagedBookings = paginate(filteredBookings, bookingPage, PAGE_SIZES.bookings);
-  const pagedPayments = paginate(payments,         paymentPage, PAGE_SIZES.payments);
-  const pagedLogs     = paginate(logs,             logPage,     PAGE_SIZES.logs);
+  const pagedPayments = paginate(sortedPayments,   paymentPage, PAGE_SIZES.payments);
+  const pagedLogs     = paginate(sortedLogs,       logPage,     PAGE_SIZES.logs);
   const pagedDisputes = paginate(sortedDisputes,   disputePage, PAGE_SIZES.disputes);
 
   const sidebarLinks = [
@@ -961,6 +972,11 @@ export const AdminSidebar = () => {
                   })}
                 </div>
               )}
+              {sortedDisputes.length > PAGE_SIZES.disputes && (
+                <div className="mt-4 bg-white border border-[#e2ddd6] rounded-[14px] overflow-hidden">
+                  <Paginator page={disputePage} total={sortedDisputes.length} pageSize={PAGE_SIZES.disputes} onPage={setDisputePage} />
+                </div>
+              )}
             </div>
           )}
 
@@ -997,7 +1013,7 @@ export const AdminSidebar = () => {
                   <table className="w-full border-collapse">
                     <thead><tr>{["Date", "Booking #", "Tenant", "Property", "Amount", "Platform Fee", "Landlord Gets", "Method", "Status"].map(h => <th key={h} className={thCls}>{h}</th>)}</tr></thead>
                     <tbody>
-                      {payments.map(p => {
+                      {pagedPayments.map(p => {
                         const fee = p.platformFee || Math.round((p.amount || 0) * PLATFORM_FEE_PCT / 100);
                         const landlordAmt = p.landlordAmount || ((p.amount || 0) - fee);
                         return (
@@ -1018,6 +1034,7 @@ export const AdminSidebar = () => {
                     </tbody>
                   </table>
                 </div>
+                <Paginator page={paymentPage} total={sortedPayments.length} pageSize={PAGE_SIZES.payments} onPage={setPaymentPage} />
               </div>
             </div>
           )}
@@ -1045,7 +1062,7 @@ export const AdminSidebar = () => {
                   <table className="w-full border-collapse">
                     <thead><tr>{["Date", "User", "Activity", "Description", ""].map(h => <th key={h} className={thCls}>{h}</th>)}</tr></thead>
                     <tbody>
-                      {logs.map((l, i) => (
+                      {pagedLogs.map((l, i) => (
                         <tr key={l._id || i} className="hover:bg-[#faf9f7]">
                           <td className={`${tdCls} text-[#8a7f74] whitespace-nowrap`}>{fmt(l.createdAt)}</td>
                           <td className={tdCls}>{l.userId?.firstName || "System"}</td>
@@ -1062,6 +1079,7 @@ export const AdminSidebar = () => {
                     </tbody>
                   </table>
                 </div>
+                <Paginator page={logPage} total={sortedLogs.length} pageSize={PAGE_SIZES.logs} onPage={setLogPage} />
               </div>
             </div>
           )}

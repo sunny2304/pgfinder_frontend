@@ -128,6 +128,10 @@ export default function LandlordDashboard() {
 
   const [form, setForm] = useState({ pgName: "", city: "", area: "", address: "", rent: "", roomType: "single", gender: "unisex", description: "", available: true });
   const [selAmenities, setSelAmenities] = useState([]);
+  // ── Image upload state ────────────────────────────────────────────────────
+  const [selectedImages, setSelectedImages] = useState([]); // File objects
+  const [imagePreviews, setImagePreviews] = useState([]);   // blob URLs for preview
+  const [uploadingImages, setUploadingImages] = useState(false);
   const AMENITY_OPTIONS = ["wifi", "meals", "laundry", "ac", "gym", "parking", "security"];
 
   const token = localStorage.getItem("token");
@@ -147,7 +151,10 @@ export default function LandlordDashboard() {
   useEffect(() => { loadProperties(); loadBookings(); loadPayments(); loadDisputes(); }, [userId]);
 
   const myPropIds = properties.map(p => p._id);
-  const myBookings = bookings.filter(b => myPropIds.includes(b.pgId?._id || b.pgId));
+  // LIFO: newest booking first — affects both overview table and full bookings tab
+  const myBookings = [...bookings]
+    .filter(b => myPropIds.includes(b.pgId?._id || b.pgId))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const pendingBookings = myBookings.filter(b => b.bookingStatus === "pending");
   const myRevenue = payments.filter(p => myPropIds.includes(p.bookingId?.pgId)).reduce((s, p) => s + (p.landlordAmount || p.amount || 0), 0);
 
@@ -165,14 +172,59 @@ export default function LandlordDashboard() {
     try { await axios.put(`/properties/${prop._id}`, { available: !prop.available }); toast.success(`Property ${!prop.available ? "activated" : "paused"}`); loadProperties(); } catch { toast.error("Update failed"); }
   };
   const toggleAmenity = a => setSelAmenities(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
+
+  // Handle image file selection
+  const handleImageSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    // Max 6 images
+    const allowed = files.slice(0, 6);
+    setSelectedImages(allowed);
+    setImagePreviews(allowed.map(f => URL.createObjectURL(f)));
+  };
+
+  const removeImagePreview = (idx) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const submitProperty = async (e) => {
     e.preventDefault();
     if (!userId) { toast.error("Login required"); return; }
     try {
-      await axios.post(`/users/${userId}/properties`, { ...form, amenities: selAmenities, rent: Number(form.rent) });
-      toast.success("Property listed!");
+      // Step 1: Create the property
+      const res = await axios.post(`/users/${userId}/properties`, { ...form, amenities: selAmenities, rent: Number(form.rent) });
+      const newPropertyId = res.data?.data?._id;
+
+      // Step 2: Upload images if any were selected
+      if (newPropertyId && selectedImages.length > 0) {
+        setUploadingImages(true);
+        try {
+          await Promise.all(
+            selectedImages.map(file => {
+              const fd = new FormData();
+              fd.append("image", file);
+              fd.append("pgId", newPropertyId);
+              return axios.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+            })
+          );
+          toast.success(`Property listed with ${selectedImages.length} photo${selectedImages.length > 1 ? "s" : ""}! 🎉`);
+        } catch {
+          toast.success("Property listed! (Some images failed to upload)");
+        } finally {
+          setUploadingImages(false);
+        }
+      } else {
+        toast.success("Property listed!");
+      }
+
+      // Reset form
       setForm({ pgName: "", city: "", area: "", address: "", rent: "", roomType: "single", gender: "unisex", description: "", available: true });
-      setSelAmenities([]); loadProperties(); setTab("properties");
+      setSelAmenities([]);
+      setSelectedImages([]);
+      setImagePreviews([]);
+      loadProperties();
+      setTab("properties");
     } catch { toast.error("Failed to list property"); }
   };
   const handleLogout = () => { localStorage.clear(); toast.success("Logged out"); navigate("/"); };
@@ -576,9 +628,56 @@ export default function LandlordDashboard() {
                         <label className={labelCls}>Description</label>
                         <textarea className={inputCls} rows={4} placeholder="Tell tenants about your property, rules, nearby areas…" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={{ fontFamily: "'Outfit',sans-serif" }} />
                       </div>
+
+                      {/* ── Property Photos Upload ── */}
+                      <div className="md:col-span-2 flex flex-col mb-4">
+                        <label className={labelCls}>Property Photos <span className="text-[#8a7f74] normal-case font-normal tracking-normal">(up to 6 images)</span></label>
+
+                        {/* Drop zone */}
+                        <label
+                          htmlFor="pg-image-upload"
+                          className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-[#e2ddd6] rounded-[12px] py-8 px-4 cursor-pointer bg-[#faf9f7] hover:border-[#2a7c6f] hover:bg-[#f0faf9] transition-all duration-300"
+                          style={{ fontFamily: "'Outfit',sans-serif" }}
+                        >
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8a7f74" strokeWidth="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21,15 16,10 5,21" />
+                          </svg>
+                          <span className="text-[0.85rem] font-semibold text-[#3d3730]">Click to upload photos</span>
+                          <span className="text-[0.75rem] text-[#8a7f74]">JPG, PNG, WEBP · Max 6 images</span>
+                          <input
+                            id="pg-image-upload"
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={handleImageSelect}
+                          />
+                        </label>
+
+                        {/* Previews grid */}
+                        {imagePreviews.length > 0 && (
+                          <div className="grid grid-cols-3 gap-2 mt-3">
+                            {imagePreviews.map((src, idx) => (
+                              <div key={idx} className="relative rounded-[10px] overflow-hidden aspect-video bg-[#f0ede8] group">
+                                <img src={src} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => removeImagePreview(idx)}
+                                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-[#e05a3a] text-white border-none cursor-pointer flex items-center justify-center text-[0.75rem] font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                >×</button>
+                                {idx === 0 && (
+                                  <span className="absolute bottom-1.5 left-1.5 text-[0.6rem] font-bold bg-[#1a2744] text-white py-[2px] px-1.5 rounded-[4px]">Cover</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <button type="submit" className="w-full py-3.5 rounded-[12px] bg-[#2a7c6f] text-white border-none text-[1rem] font-bold cursor-pointer mt-2 transition-all duration-300 hover:bg-[#3a9e8e] hover:-translate-y-px" style={{ fontFamily: "'Outfit',sans-serif" }}>
-                      Publish Listing →
+                    <button type="submit" disabled={uploadingImages} className="w-full py-3.5 rounded-[12px] bg-[#2a7c6f] text-white border-none text-[1rem] font-bold cursor-pointer mt-2 transition-all duration-300 hover:bg-[#3a9e8e] hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed" style={{ fontFamily: "'Outfit',sans-serif" }}>
+                      {uploadingImages ? "Uploading photos…" : "Publish Listing →"}
                     </button>
                   </form>
                 </div>
@@ -730,7 +829,7 @@ export default function LandlordDashboard() {
           )}
 
           {/* ══ EARNINGS ══ */}
-          {tab === "earnings" && <EarningsTab payments={payments} myBookings={myBookings} />}
+          {tab === "earnings" && <EarningsTab payments={payments} myBookings={myBookings} myPropIds={myPropIds} />}
 
         </main>
       </div>
