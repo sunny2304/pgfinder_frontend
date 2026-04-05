@@ -21,6 +21,7 @@ export const BrowsePG = () => {
   const navigate = useNavigate();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [propertyImages, setPropertyImages] = useState({}); // { pgId: [url, ...] }
   const [wishlist, setWishlist] = useState(() => {
     try { return JSON.parse(localStorage.getItem("pgWishlist") || "[]"); } catch { return []; }
   });
@@ -49,11 +50,30 @@ export const BrowsePG = () => {
       else if (currentSort === "high") data = [...data].sort((a, b) => b.rent - a.rent);
       else if (currentSort === "newest") data = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setProperties(data);
+
+      // Fetch real images for all properties in parallel (silently)
+      fetchAllImages(data);
     } catch {
       toast.error("Failed to load properties");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fetch images for all properties — populates propertyImages map
+  const fetchAllImages = async (props) => {
+    const results = await Promise.allSettled(
+      props.map(p =>
+        axios.get(`/propertyimage/${p._id}`)
+          .then(r => ({ id: p._id, urls: (r.data?.images || []).map(img => img.imageUrl).filter(Boolean) }))
+          .catch(() => ({ id: p._id, urls: [] }))
+      )
+    );
+    const map = {};
+    results.forEach(r => {
+      if (r.status === "fulfilled") map[r.value.id] = r.value.urls;
+    });
+    setPropertyImages(map);
   };
 
   useEffect(() => { fetchProperties(); }, []);
@@ -227,7 +247,9 @@ export const BrowsePG = () => {
             <div className="grid gap-[22px]" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))" }}>
               {properties.map((p, idx) => {
                 const badge = getBadge(p, idx);
-                const imgSrc = PG_IMAGES[idx % PG_IMAGES.length];
+                // Use first uploaded image if available, otherwise fall back to stock photo
+                const realImages = propertyImages[p._id] || [];
+                const imgSrc = realImages.length > 0 ? realImages[0] : PG_IMAGES[idx % PG_IMAGES.length];
                 const isSaved = wishlist.includes(p._id);
 
                 return (
@@ -242,11 +264,22 @@ export const BrowsePG = () => {
                         src={imgSrc}
                         alt={p.pgName}
                         className="w-full h-full object-cover transition-transform duration-400"
-                        onError={(e) => { e.target.style.display = "none"; }}
+                        onError={(e) => {
+                          // Fall back to stock photo if real image fails
+                          const fallback = PG_IMAGES[idx % PG_IMAGES.length];
+                          if (e.target.src !== fallback) e.target.src = fallback;
+                        }}
                       />
                       <div className="absolute top-3 left-3 text-[0.67rem] font-bold tracking-[0.5px] py-1 px-[11px] rounded-[6px] text-white" style={{ background: badge.bg }}>
                         {badge.label}
                       </div>
+                      {/* Real photo count badge */}
+                      {realImages.length > 1 && (
+                        <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/55 text-white text-[0.65rem] font-semibold py-[3px] px-2 rounded-[5px] backdrop-blur-sm">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+                          {realImages.length} photos
+                        </div>
+                      )}
                       {/* Wishlist button */}
                       <button
                         className={`absolute top-3 right-3 w-[34px] h-[34px] rounded-full bg-white/92 border-none cursor-pointer flex items-center justify-center transition-all duration-300 z-[2] backdrop-blur-sm hover:bg-white hover:scale-110 ${isSaved ? "wish-saved" : "wish-unsaved"}`}
