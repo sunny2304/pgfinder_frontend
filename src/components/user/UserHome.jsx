@@ -8,6 +8,7 @@ export default function UserHome() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [featuredPGs, setFeaturedPGs] = useState([]);
+  const [stats, setStats] = useState(null);
 
   // ── fetch logged-in user
   useEffect(() => {
@@ -16,16 +17,28 @@ export default function UserHome() {
     axios
       .get("/profile", { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setUser(res.data.data))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
-  // ── fetch featured PGs (first 3)
+  // ── fetch all properties once → derive stats + featured cards
   useEffect(() => {
     axios
       .get("/properties")
       .then((res) => {
         const data = res.data.data || [];
         setFeaturedPGs(data.slice(0, 3));
+
+        // Derive real stats from the database
+        const totalListings = data.length;
+        const uniqueCities = new Set(
+          data.map((p) => p.city?.trim().toLowerCase()).filter(Boolean)
+        ).size;
+        const verifiedCount = data.filter((p) => p.available).length;
+        const uniqueLandlords = new Set(
+          data.map((p) => p.landlordId?._id || p.landlordId).filter(Boolean)
+        ).size;
+
+        setStats({ totalListings, uniqueCities, verifiedCount, uniqueLandlords });
       })
       .catch((err) => console.error("Failed to load featured PGs", err));
   }, []);
@@ -37,8 +50,15 @@ export default function UserHome() {
 
   const handleSearch = () => {
     const params = new URLSearchParams();
-    if (searchLocation) params.set("location", searchLocation);
-    if (searchBudget) params.set("budget", searchBudget);
+    if (searchLocation.trim()) params.set("location", searchLocation.trim());
+    if (searchRoomType) params.set("roomType", searchRoomType);
+    // Map budget dropdown to minPrice/maxPrice so BrowsePG filters correctly
+    if (searchBudget) {
+      if (searchBudget === "5000") { params.set("maxPrice", "5000"); }
+      else if (searchBudget === "10000") { params.set("minPrice", "5000"); params.set("maxPrice", "10000"); }
+      else if (searchBudget === "20000") { params.set("minPrice", "10000"); params.set("maxPrice", "20000"); }
+      else if (searchBudget === "99999") { params.set("minPrice", "20000"); }
+    }
     navigate(`/browse?${params.toString()}`);
   };
 
@@ -83,12 +103,20 @@ export default function UserHome() {
   ];
 
   // ── stats (unchanged)
-  const stats = [
-    { num: "12,400+", label: "Listed Properties" },
-    { num: "48,000+", label: "Happy Tenants" },
-    { num: "320+", label: "Cities Covered" },
-    { num: "98%", label: "Verified Listings" },
-  ];
+  // Dynamic stats derived from database
+  const statsData = stats
+    ? [
+      { num: stats.totalListings.toLocaleString() + "+", label: "Listed Properties" },
+      { num: stats.uniqueLandlords.toLocaleString() + "+", label: "Active Landlords" },
+      { num: stats.uniqueCities.toLocaleString() + "+", label: "Cities Covered" },
+      { num: stats.verifiedCount.toLocaleString() + "+", label: "Verified Listings" },
+    ]
+    : [
+      { num: "...", label: "Listed Properties" },
+      { num: "...", label: "Active Landlords" },
+      { num: "...", label: "Cities Covered" },
+      { num: "...", label: "Verified Listings" },
+    ];
 
   // ── badge helper (unchanged)
   const badgeFor = (pg, index) => {
@@ -294,7 +322,7 @@ export default function UserHome() {
 
             {/* ── STATS ROW — matches Image 3 (large white numbers, muted labels) ── */}
             <div className="fu-4 flex items-center justify-center flex-wrap gap-0 mt-16">
-              {stats.map((s, i) => (
+              {statsData.map((s, i) => (
                 <div key={s.label} className="flex items-center">
                   <div className="text-center px-8 py-2">
                     <div
@@ -309,7 +337,7 @@ export default function UserHome() {
                     </div>
                     <div className="text-white/65 text-[0.8rem] font-medium mt-1.5">{s.label}</div>
                   </div>
-                  {i < stats.length - 1 && (
+                  {i < statsData.length - 1 && (
                     <div className="w-px h-10 bg-white/20 flex-shrink-0" />
                   )}
                 </div>
@@ -352,103 +380,36 @@ export default function UserHome() {
           <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
             {featuredPGs.length > 0
               ? featuredPGs.map((pg, index) => {
-                  const badge = badgeFor(pg, index);
-                  const reviewCount = 10 + (pg.pgName?.length % 70);
-                  return (
-                    <div
-                      key={pg._id}
-                      className="prop-card bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 shadow-[0_2px_20px_rgba(26,39,68,0.07)] hover:shadow-[0_8px_40px_rgba(26,39,68,0.14)] hover:-translate-y-1"
-                      onClick={() => navigate(`/property/${pg._id}`)}
-                    >
-                      {/* Image */}
-                      <div className="card-img-wrap h-[210px] relative overflow-hidden bg-[#e8f5f3]">
-                        {pg.image ? (
-                          <img
-                            src={pg.image}
-                            alt={pg.pgName}
-                            className="w-full h-full object-cover"
-                            onError={(e) => { e.target.style.display = "none"; }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center opacity-30">
-                            <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
-                              <path d="M10 32L32 14l22 18v20H10V32z" stroke="#2a7c6f" strokeWidth="2.5" fill="#2a7c6f" fillOpacity="0.15" />
-                            </svg>
-                          </div>
-                        )}
-                        {/* Badge */}
-                        <span
-                          className="absolute top-3.5 left-3.5 text-white text-[0.7rem] font-bold py-1 px-3 rounded-[6px]"
-                          style={{ background: badge.color }}
-                        >
-                          {badge.label}
-                        </span>
-                      </div>
-
-                      {/* Body */}
-                      <div className="px-5 pt-4 pb-5">
-                        <h3
-                          className="font-bold text-[1.05rem] text-[#1a2744] mb-1.5"
-                          style={{ fontFamily: "'Fraunces', serif" }}
-                        >
-                          {pg.pgName}
-                        </h3>
-                        <div className="flex items-center gap-1.5 text-[#8a7f74] text-[0.82rem] mb-4">
-                          <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" className="flex-shrink-0">
-                            <path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9z" />
-                          </svg>
-                          {pg.area ? `${pg.area}, ` : ""}{pg.city}
-                        </div>
-
-                        {/* Amenity tags */}
-                        <div className="flex flex-wrap gap-1.5 mb-5">
-                          {(pg.amenities || []).slice(0, 4).map((tag) => (
-                            <span
-                              key={tag}
-                              className="bg-[#f5f3f0] border border-[#e8e5e0] text-[#3d3730] text-[0.72rem] py-1 px-3 rounded-full font-medium capitalize"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-
-                        {/* Price + rating */}
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-bold text-[1.12rem] text-[#1a2744]">
-                              ₹{pg.rent?.toLocaleString()}
-                            </span>
-                            <span className="text-[#8a7f74] text-[0.78rem] font-normal ml-1">/month</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-[#8a7f74] text-[0.82rem]">
-                            <span className="text-[#c8922a]">★</span>
-                            <span className="font-semibold text-[#1a2744]">{pg.rating || "4.7"}</span>
-                            <span className="text-[#b5ada6]">({reviewCount})</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              : staticCards.map((p) => (
+                const badge = badgeFor(pg, index);
+                const reviewCount = 10 + (pg.pgName?.length % 70);
+                return (
                   <div
-                    key={p.name}
+                    key={pg._id}
                     className="prop-card bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 shadow-[0_2px_20px_rgba(26,39,68,0.07)] hover:shadow-[0_8px_40px_rgba(26,39,68,0.14)] hover:-translate-y-1"
-                    onClick={() => navigate("/browse")}
+                    onClick={() => navigate(`/property/${pg._id}`)}
                   >
                     {/* Image */}
-                    <div className="card-img-wrap h-[210px] relative overflow-hidden bg-[#f0ede8]">
-                      <img
-                        src={p.img}
-                        alt={p.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { e.target.style.display = "none"; }}
-                      />
+                    <div className="card-img-wrap h-[210px] relative overflow-hidden bg-[#e8f5f3]">
+                      {pg.image ? (
+                        <img
+                          src={pg.image}
+                          alt={pg.pgName}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { e.target.style.display = "none"; }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center opacity-30">
+                          <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+                            <path d="M10 32L32 14l22 18v20H10V32z" stroke="#2a7c6f" strokeWidth="2.5" fill="#2a7c6f" fillOpacity="0.15" />
+                          </svg>
+                        </div>
+                      )}
+                      {/* Badge */}
                       <span
                         className="absolute top-3.5 left-3.5 text-white text-[0.7rem] font-bold py-1 px-3 rounded-[6px]"
-                        style={{ background: p.badgeColor }}
+                        style={{ background: badge.color }}
                       >
-                        {p.badge}
+                        {badge.label}
                       </span>
                     </div>
 
@@ -458,42 +419,109 @@ export default function UserHome() {
                         className="font-bold text-[1.05rem] text-[#1a2744] mb-1.5"
                         style={{ fontFamily: "'Fraunces', serif" }}
                       >
-                        {p.name}
+                        {pg.pgName}
                       </h3>
                       <div className="flex items-center gap-1.5 text-[#8a7f74] text-[0.82rem] mb-4">
                         <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" className="flex-shrink-0">
                           <path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9z" />
                         </svg>
-                        {p.location}
+                        {pg.area ? `${pg.area}, ` : ""}{pg.city}
                       </div>
 
                       {/* Amenity tags */}
                       <div className="flex flex-wrap gap-1.5 mb-5">
-                        {p.tags.map((tag) => (
+                        {(pg.amenities || []).slice(0, 4).map((tag) => (
                           <span
                             key={tag}
-                            className="bg-[#f5f3f0] border border-[#e8e5e0] text-[#3d3730] text-[0.72rem] py-1 px-3 rounded-full font-medium"
+                            className="bg-[#f5f3f0] border border-[#e8e5e0] text-[#3d3730] text-[0.72rem] py-1 px-3 rounded-full font-medium capitalize"
                           >
                             {tag}
                           </span>
                         ))}
                       </div>
 
-                      {/* Price + rating with review count */}
+                      {/* Price + rating */}
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="font-bold text-[1.12rem] text-[#1a2744]">{p.price}</span>
+                          <span className="font-bold text-[1.12rem] text-[#1a2744]">
+                            ₹{pg.rent?.toLocaleString()}
+                          </span>
                           <span className="text-[#8a7f74] text-[0.78rem] font-normal ml-1">/month</span>
                         </div>
-                        <div className="flex items-center gap-1 text-[0.82rem]">
+                        <div className="flex items-center gap-1 text-[#8a7f74] text-[0.82rem]">
                           <span className="text-[#c8922a]">★</span>
-                          <span className="font-semibold text-[#1a2744]">{p.rating}</span>
-                          <span className="text-[#b5ada6]">({p.reviews})</span>
+                          <span className="font-semibold text-[#1a2744]">{pg.rating || "4.7"}</span>
+                          <span className="text-[#b5ada6]">({reviewCount})</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                );
+              })
+              : staticCards.map((p) => (
+                <div
+                  key={p.name}
+                  className="prop-card bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 shadow-[0_2px_20px_rgba(26,39,68,0.07)] hover:shadow-[0_8px_40px_rgba(26,39,68,0.14)] hover:-translate-y-1"
+                  onClick={() => navigate("/browse")}
+                >
+                  {/* Image */}
+                  <div className="card-img-wrap h-[210px] relative overflow-hidden bg-[#f0ede8]">
+                    <img
+                      src={p.img}
+                      alt={p.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.target.style.display = "none"; }}
+                    />
+                    <span
+                      className="absolute top-3.5 left-3.5 text-white text-[0.7rem] font-bold py-1 px-3 rounded-[6px]"
+                      style={{ background: p.badgeColor }}
+                    >
+                      {p.badge}
+                    </span>
+                  </div>
+
+                  {/* Body */}
+                  <div className="px-5 pt-4 pb-5">
+                    <h3
+                      className="font-bold text-[1.05rem] text-[#1a2744] mb-1.5"
+                      style={{ fontFamily: "'Fraunces', serif" }}
+                    >
+                      {p.name}
+                    </h3>
+                    <div className="flex items-center gap-1.5 text-[#8a7f74] text-[0.82rem] mb-4">
+                      <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" className="flex-shrink-0">
+                        <path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9z" />
+                      </svg>
+                      {p.location}
+                    </div>
+
+                    {/* Amenity tags */}
+                    <div className="flex flex-wrap gap-1.5 mb-5">
+                      {p.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="bg-[#f5f3f0] border border-[#e8e5e0] text-[#3d3730] text-[0.72rem] py-1 px-3 rounded-full font-medium"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Price + rating with review count */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-[1.12rem] text-[#1a2744]">{p.price}</span>
+                        <span className="text-[#8a7f74] text-[0.78rem] font-normal ml-1">/month</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[0.82rem]">
+                        <span className="text-[#c8922a]">★</span>
+                        <span className="font-semibold text-[#1a2744]">{p.rating}</span>
+                        <span className="text-[#b5ada6]">({p.reviews})</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
           </div>
         </section>
 

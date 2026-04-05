@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -19,6 +19,7 @@ const PG_IMAGES = [
 
 export const BrowsePG = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [propertyImages, setPropertyImages] = useState({}); // { pgId: [url, ...] }
@@ -76,7 +77,43 @@ export const BrowsePG = () => {
     setPropertyImages(map);
   };
 
-  useEffect(() => { fetchProperties(); }, []);
+  // Read URL params on mount (from UserHome search) and pre-fill filters, then fetch
+  useEffect(() => {
+    const loc = searchParams.get("location") || "";
+    const minP = searchParams.get("minPrice") || "";
+    const maxP = searchParams.get("maxPrice") || "";
+    const rt = searchParams.get("roomType") || "";
+    const gen = searchParams.get("gender") || "";
+
+    // Pre-fill sidebar filter state from URL
+    if (loc) setLocation(loc);
+    if (minP) setMinPrice(minP);
+    if (maxP) setMaxPrice(maxP);
+    if (gen) setGender(gen);
+
+    // Build params directly from URL (state update is async, so pass them inline)
+    const fetchWithUrlParams = async () => {
+      setLoading(true);
+      try {
+        const params = {};
+        if (loc) params.location = loc;
+        if (minP) params.minPrice = minP;
+        if (maxP) params.maxPrice = maxP;
+        if (gen) params.gender = gen;
+        if (rt) params.roomType = rt;
+        const res = await axios.get("/properties", { params });
+        let data = res.data.data || [];
+        setProperties(data);
+        fetchAllImages(data);
+      } catch {
+        toast.error("Failed to load properties");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWithUrlParams();
+  }, [searchParams]);
 
   const toggleAmenity = (a) =>
     setSelAmenities((prev) => prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]);
