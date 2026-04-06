@@ -726,34 +726,50 @@ export const AdminSidebar = () => {
               <div className="bg-white border border-[#e2ddd6] rounded-[14px] shadow-[0_2px_16px_rgba(26,39,68,0.08)] overflow-hidden mb-5">
                 <div className="adm-table-wrap">
                   <table className="w-full border-collapse">
-                    <thead><tr>{["Property Name", "Landlord", "Location", "Rent", "Gender", "Status", "Actions"].map(h => <th key={h} className={thCls}>{h}</th>)}</tr></thead>
+                    <thead><tr>{["Property Name", "Landlord", "Location", "Room Types", "Total Rooms", "Available", "Rent From", "Gender", "Status", "Actions"].map(h => <th key={h} className={thCls}>{h}</th>)}</tr></thead>
                     <tbody>
-                      {pagedProps.map(p => (
-                        <tr key={p._id} className="hover:bg-[#faf9f7]">
-                          <td className={tdCls}><strong>{p.pgName}</strong></td>
-                          <td className={tdCls}>{p.landlordId?.firstName || "—"} {p.landlordId?.lastName || ""}</td>
-                          <td className={tdCls}>{p.area ? `${p.area}, ` : ""}{p.city}</td>
-                          <td className={tdCls}>₹{p.rent?.toLocaleString()}</td>
-                          <td className={`${tdCls} capitalize`}>{p.gender || "—"}</td>
-                          <td className={tdCls}>
-                            <span className={p.available ? "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[rgba(42,124,111,0.1)] text-[#2a7c6f]" : "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[#fdf0ec] text-[#e05a3a]"}>
-                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: p.available ? "#2a7c6f" : "#e05a3a", display: "inline-block" }} />
-                              {p.available ? "Available" : "Paused"}
-                            </span>
-                          </td>
-                          <td className={tdCls}>
-                            <div className="flex gap-1.5 flex-wrap">
-                              <BtnSm cls="bg-[#eef2fb] text-[#3b6bcc] hover:bg-blue-100" onClick={() => viewPropertyReviews(p)}>Reviews</BtnSm>
-                              <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => handleEditProp(p)}>Edit</BtnSm>
-                              {p.available
-                                ? <BtnSm cls="bg-[#fdf0ec] text-[#e05a3a] hover:bg-orange-100" onClick={() => toggleProperty(p)}>Pause</BtnSm>
-                                : <BtnSm cls="bg-[#e8f5f3] text-[#2a7c6f] hover:bg-[rgba(42,124,111,0.18)]" onClick={() => toggleProperty(p)}>Activate</BtnSm>}
-                              <BtnSm cls="bg-[#fdf0ec] text-[#e05a3a] hover:bg-orange-100" onClick={() => deleteProperty(p._id, p.pgName)}>Delete</BtnSm>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {filteredProps.length === 0 && <tr><td colSpan={7} className="text-center text-[#8a7f74] py-6">No properties found.</td></tr>}
+                      {pagedProps.map(p => {
+                        // Compute room summary from new schema or fallback
+                        const cats = p.roomCategories && p.roomCategories.length > 0 ? p.roomCategories : null;
+                        const roomTypeList = cats
+                          ? cats.map(c => c.type.charAt(0).toUpperCase() + c.type.slice(1)).join(", ")
+                          : (p.roomType ? p.roomType.charAt(0).toUpperCase() + p.roomType.slice(1) : "—");
+                        const totalRooms = cats ? cats.reduce((s, c) => s + (c.totalRooms || 0), 0) : "—";
+                        const availRooms = cats ? cats.reduce((s, c) => s + (c.availableRooms || 0), 0) : "—";
+                        return (
+                          <tr key={p._id} className="hover:bg-[#faf9f7]">
+                            <td className={tdCls}><strong>{p.pgName}</strong></td>
+                            <td className={tdCls}>{p.landlordId?.firstName || "—"} {p.landlordId?.lastName || ""}</td>
+                            <td className={tdCls}>{p.area ? `${p.area}, ` : ""}{p.city}</td>
+                            <td className={`${tdCls} capitalize`} style={{ fontSize: "0.8rem" }}>{roomTypeList}</td>
+                            <td className={tdCls}>{totalRooms}</td>
+                            <td className={tdCls}>
+                              <span className={typeof availRooms === "number" && availRooms === 0 ? "font-bold text-[#e05a3a]" : "font-bold text-[#2a7c6f]"}>
+                                {availRooms}
+                              </span>
+                            </td>
+                            <td className={tdCls}>₹{p.rent?.toLocaleString()}</td>
+                            <td className={`${tdCls} capitalize`}>{p.gender || "—"}</td>
+                            <td className={tdCls}>
+                              <span className={p.available ? "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[rgba(42,124,111,0.1)] text-[#2a7c6f]" : "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[#fdf0ec] text-[#e05a3a]"}>
+                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: p.available ? "#2a7c6f" : "#e05a3a", display: "inline-block" }} />
+                                {p.available ? "Available" : "Paused"}
+                              </span>
+                            </td>
+                            <td className={tdCls}>
+                              <div className="flex gap-1.5 flex-wrap">
+                                <BtnSm cls="bg-[#eef2fb] text-[#3b6bcc] hover:bg-blue-100" onClick={() => viewPropertyReviews(p)}>Reviews</BtnSm>
+                                <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => handleEditProp(p)}>Edit</BtnSm>
+                                {p.available
+                                  ? <BtnSm cls="bg-[#fdf0ec] text-[#e05a3a] hover:bg-orange-100" onClick={() => toggleProperty(p)}>Pause</BtnSm>
+                                  : <BtnSm cls="bg-[#e8f5f3] text-[#2a7c6f] hover:bg-[rgba(42,124,111,0.18)]" onClick={() => toggleProperty(p)}>Activate</BtnSm>}
+                                <BtnSm cls="bg-[#fdf0ec] text-[#e05a3a] hover:bg-orange-100" onClick={() => deleteProperty(p._id, p.pgName)}>Delete</BtnSm>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredProps.length === 0 && <tr><td colSpan={10} className="text-center text-[#8a7f74] py-6">No properties found.</td></tr>}
                     </tbody>
                   </table>
                 </div>

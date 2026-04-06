@@ -73,12 +73,17 @@ const CSS = `
   border-radius:10px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.9rem;
   padding:11px 14px;outline:none;transition:var(--tr);}
 .form-input-bc:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(42,124,111,0.1);}
-.room-btns{display:flex;gap:7px;}
-.room-btn{flex:1;padding:9px 8px;border-radius:8px;border:1.5px solid var(--border);
+.room-btns{display:flex;gap:7px;flex-wrap:wrap;}
+.room-btn{flex:1;min-width:80px;padding:9px 8px;border-radius:8px;border:1.5px solid var(--border);
   background:var(--surface);color:var(--text2);font-family:'Outfit',sans-serif;
-  font-size:0.82rem;font-weight:600;cursor:pointer;transition:var(--tr);text-transform:capitalize;}
+  font-size:0.82rem;font-weight:600;cursor:pointer;transition:var(--tr);text-transform:capitalize;
+  display:flex;flex-direction:column;align-items:center;gap:2px;}
+.room-btn .room-lbl{font-size:0.82rem;font-weight:600;}
+.room-btn .room-avail{font-size:0.68rem;font-weight:500;opacity:0.75;}
 .room-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
-.room-btn:hover:not(.active){border-color:var(--navy);color:var(--navy);}
+.room-btn.active .room-avail{opacity:0.85;}
+.room-btn:hover:not(.active):not(:disabled){border-color:var(--navy);color:var(--navy);}
+.room-btn:disabled{opacity:0.45;cursor:not-allowed;}
 .booking-summary{background:var(--surface);border-radius:10px;padding:16px;margin:16px 0;}
 .booking-summary-row{display:flex;justify-content:space-between;font-size:0.86rem;
   padding:7px 0;border-bottom:1px solid var(--border);color:var(--text2);}
@@ -139,10 +144,25 @@ const CSS = `
 }
 `;
 
-
-
-const AMENITY_ICONS = { wifi: "", meals: "", laundry: "", ac: "", gym: "", parking: "", security: "" };
+const AMENITY_ICONS = { wifi: "📶", meals: "🍽️", laundry: "👕", ac: "❄️", gym: "💪", parking: "🅿️", security: "🔒" };
 const GENDER_MAP = { male: "Boys Only", female: "Girls Only", unisex: "Co-ed / Unisex" };
+
+// Derive available room types from property (supports both new roomCategories and legacy roomType)
+const getAvailableRoomTypes = (property) => {
+  if (property.roomCategories && property.roomCategories.length > 0) {
+    return property.roomCategories.map((cat) => ({
+      type: cat.type,
+      totalRooms: cat.totalRooms,
+      availableRooms: cat.availableRooms,
+      pricePerBed: cat.pricePerBed,
+    }));
+  }
+  // Legacy: single roomType
+  if (property.roomType) {
+    return [{ type: property.roomType, totalRooms: null, availableRooms: null, pricePerBed: property.rent }];
+  }
+  return [];
+};
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -158,7 +178,7 @@ const PropertyDetails = () => {
   // Booking form
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
-  const [roomType, setRoomType] = useState("single");
+  const [roomType, setRoomType] = useState(""); // will be set after property loads
   const [months, setMonths] = useState(0);
 
   // Wishlist
@@ -177,7 +197,13 @@ const PropertyDetails = () => {
           axios.get(`/properties/${id}/reviews`),
           axios.get(`/propertyimage/${id}`),
         ]);
-        if (propRes.status === "fulfilled") setProperty(propRes.value.data);
+        if (propRes.status === "fulfilled") {
+          const prop = propRes.value.data;
+          setProperty(prop);
+          // Default roomType to first available category
+          const types = getAvailableRoomTypes(prop);
+          if (types.length > 0) setRoomType(types[0].type);
+        }
         if (revRes.status === "fulfilled") setReviews(revRes.value.data || []);
         if (imgRes.status === "fulfilled") {
           const imgs = (imgRes.value.data?.images || []).map(img => img.imageUrl).filter(Boolean);
@@ -224,12 +250,31 @@ const PropertyDetails = () => {
       toast.error("Check-out must be after check-in");
       return;
     }
+    // Check availability of selected room type
+    if (property.roomCategories && property.roomCategories.length > 0) {
+      const cat = property.roomCategories.find(c => c.type === roomType);
+      if (cat && cat.availableRooms <= 0) {
+        toast.error(`No ${roomType} rooms available right now`);
+        return;
+      }
+    }
     navigate(`/checkout/${id}`, {
       state: { checkInDate, checkOutDate, roomType, months, property }
     });
   };
 
-  const totalRent = property ? property.rent * months : 0;
+  // Get the selected room category's price
+  const getSelectedPrice = () => {
+    if (!property) return 0;
+    if (property.roomCategories && property.roomCategories.length > 0) {
+      const cat = property.roomCategories.find(c => c.type === roomType);
+      return cat?.pricePerBed || property.rent || 0;
+    }
+    return property.rent || 0;
+  };
+
+  const selectedPrice = getSelectedPrice();
+  const totalRent = selectedPrice * months;
   const isSaved = wishlist.includes(id);
 
   const statusPillClass = (s) => {
@@ -237,6 +282,10 @@ const PropertyDetails = () => {
     if (s === "cancelled") return "status-pill sp-cancelled";
     return "status-pill sp-pending";
   };
+
+  const avgRating = reviews.length
+    ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1)
+    : (4.2 + (property?.pgName?.length % 8) * 0.1).toFixed(1);
 
   if (loading) {
     return (
@@ -265,10 +314,15 @@ const PropertyDetails = () => {
     );
   }
 
-  const rating = (4.2 + (property.pgName?.length % 8) * 0.1).toFixed(1);
-
+  const availableRoomTypes = getAvailableRoomTypes(property);
   const prevSlide = () => setActiveSlide(i => (i - 1 + propertyImages.length) % propertyImages.length);
   const nextSlide = () => setActiveSlide(i => (i + 1) % propertyImages.length);
+
+  // Overall availability: at least one room type has rooms available
+  const isAnyRoomAvailable = property.available && (
+    availableRoomTypes.length === 0 ||
+    availableRoomTypes.some(t => t.availableRooms === null || t.availableRooms > 0)
+  );
 
   return (
     <>
@@ -285,14 +339,11 @@ const PropertyDetails = () => {
               onError={e => { e.target.style.display = "none"; }}
             />
             <div className="gallery-hero-overlay" />
-            {/* Badges */}
             <div className="detail-hero-badges">
               <span className="prop-badge badge-verified">Verified</span>
               {property.available && <span className="prop-badge badge-top">Available</span>}
             </div>
-            {/* Back button */}
             <button className="detail-back" onClick={() => navigate(-1)}>← Back to listings</button>
-            {/* Prev/Next arrows */}
             {propertyImages.length > 1 && (
               <>
                 <button className="gallery-nav-btn left" onClick={prevSlide} aria-label="Previous">
@@ -301,13 +352,11 @@ const PropertyDetails = () => {
                 <button className="gallery-nav-btn right" onClick={nextSlide} aria-label="Next">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a2744" strokeWidth="2.5"><polyline points="9,6 15,12 9,18"/></svg>
                 </button>
-                {/* Dots */}
                 <div className="gallery-dots">
                   {propertyImages.map((_, i) => (
                     <button key={i} className={`gallery-dot${i === activeSlide ? " active" : ""}`} onClick={() => setActiveSlide(i)} aria-label={`Go to photo ${i+1}`} />
                   ))}
                 </div>
-                {/* Counter */}
                 <div className="gallery-counter">{activeSlide + 1} / {propertyImages.length}</div>
               </>
             )}
@@ -316,7 +365,6 @@ const PropertyDetails = () => {
           <div className="no-image-hero">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
             <span style={{fontSize:"0.9rem"}}>No images uploaded yet</span>
-            {/* Badges + back on no-image hero */}
             <div className="detail-hero-badges" style={{top:20,left:20,position:"absolute",display:"flex",gap:8}}>
               <span className="prop-badge badge-verified">Verified</span>
               {property.available && <span className="prop-badge badge-top">Available</span>}
@@ -327,7 +375,6 @@ const PropertyDetails = () => {
 
         {/* ── CONTENT ── */}
         <div className="detail-wrap">
-          {/* Thumbnail strip */}
           {propertyImages.length > 1 && (
             <div className="gallery-thumbs" style={{marginBottom:8}}>
               {propertyImages.map((url, i) => (
@@ -337,7 +384,7 @@ const PropertyDetails = () => {
               ))}
             </div>
           )}
-          {/* Booking status banner if came from My Bookings */}
+
           {bookingStatus && (
             <div style={{ marginBottom: 20, padding: "12px 20px", background: bookingStatus === "confirmed" ? "var(--teal-pale)" : bookingStatus === "cancelled" ? "var(--coral-pale)" : "var(--gold-pale)", borderRadius: 12, border: `1px solid ${bookingStatus === "confirmed" ? "rgba(42,124,111,0.3)" : bookingStatus === "cancelled" ? "rgba(224,90,58,0.3)" : "rgba(200,146,42,0.3)"}`, display: "flex", alignItems: "center", gap: 10, fontFamily: "'Outfit',sans-serif", fontSize: "0.88rem", color: "var(--text2)" }}>
               <span className={statusPillClass(bookingStatus)}>{bookingStatus}</span>
@@ -367,13 +414,20 @@ const PropertyDetails = () => {
 
               {/* Stats row */}
               <div className="detail-rating-row">
-                <div className="detail-rating-item"><div className="val" style={{ color: "var(--gold)" }}>★ {rating}</div><div className="lbl">Rating</div></div>
+                <div className="detail-rating-item"><div className="val" style={{ color: "var(--gold)" }}>★ {avgRating}</div><div className="lbl">Rating</div></div>
                 <div className="detail-divider" />
                 <div className="detail-rating-item"><div className="val">{reviews.length}</div><div className="lbl">Reviews</div></div>
                 <div className="detail-divider" />
-                <div className="detail-rating-item"><div className="val" style={{ textTransform: "capitalize" }}>{property.roomType || "—"}</div><div className="lbl">Room Type</div></div>
+                <div className="detail-rating-item">
+                  <div className="val" style={{ textTransform: "capitalize", fontSize: "0.9rem" }}>
+                    {availableRoomTypes.length > 0
+                      ? availableRoomTypes.map(t => t.type).join(", ")
+                      : property.roomType || "—"}
+                  </div>
+                  <div className="lbl">Room Types</div>
+                </div>
                 <div className="detail-divider" />
-                <div className="detail-rating-item"><div className="val" style={{ color: property.available ? "var(--teal)" : "var(--coral)" }}>{property.available ? "Available" : "Full"}</div><div className="lbl">Status</div></div>
+                <div className="detail-rating-item"><div className="val" style={{ color: isAnyRoomAvailable ? "var(--teal)" : "var(--coral)" }}>{isAnyRoomAvailable ? "Available" : "Full"}</div><div className="lbl">Status</div></div>
                 <div className="detail-divider" />
                 <div className="detail-rating-item"><div className="val" style={{ color: "var(--blue)", textTransform: "capitalize" }}>{GENDER_MAP[property.gender] || property.gender}</div><div className="lbl">Gender</div></div>
               </div>
@@ -383,6 +437,56 @@ const PropertyDetails = () => {
               <div className="detail-desc">
                 {property.description || `${property.pgName} is a premium paying guest accommodation located in ${property.area || property.city}. Offering comfortable, well-furnished rooms with essential amenities in a safe and welcoming environment.`}
               </div>
+
+              {/* Room Categories Info */}
+              {availableRoomTypes.length > 0 && (
+                <>
+                  <div className="detail-section-title">Room Options</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {availableRoomTypes.map((cat) => {
+                      const isFull = cat.availableRooms !== null && cat.availableRooms <= 0;
+                      return (
+                        <div key={cat.type} style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "12px 16px", background: "var(--surface)",
+                          borderRadius: 10, border: `1px solid ${isFull ? "rgba(224,90,58,0.25)" : "var(--border)"}`,
+                          fontFamily: "'Outfit',sans-serif"
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div style={{
+                              width: 36, height: 36, borderRadius: 9,
+                              background: isFull ? "var(--coral-pale)" : "var(--teal-pale)",
+                              display: "flex", alignItems: "center", justifyContent: "center"
+                            }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isFull ? "var(--coral)" : "var(--teal)"} strokeWidth="2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/>
+                              </svg>
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700, color: "var(--navy)", fontSize: "0.92rem", textTransform: "capitalize" }}>
+                                {cat.type} Occupancy
+                              </div>
+                              {cat.totalRooms !== null && (
+                                <div style={{ fontSize: "0.75rem", color: isFull ? "var(--coral)" : "var(--muted)" }}>
+                                  {isFull ? "No rooms available" : `${cat.availableRooms} of ${cat.totalRooms} rooms available`}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {cat.pricePerBed > 0 && (
+                            <div style={{ textAlign: "right" }}>
+                              <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "1rem", fontFamily: "'Fraunces',serif" }}>
+                                ₹{cat.pricePerBed.toLocaleString()}
+                              </div>
+                              <div style={{ fontSize: "0.72rem", color: "var(--muted)" }}>/ bed / month</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
 
               {/* Amenities */}
               {property.amenities?.length > 0 && (
@@ -405,24 +509,22 @@ const PropertyDetails = () => {
               <div className="detail-section-title">Reviews</div>
               {reviews.length > 0 ? (
                 reviews.slice(0, 6).map((r, i) => {
-                  // After the ReviewController fix, populated field is `userId`
-                  // Support both old docs (r.user) and new docs (r.userId) for backward compatibility
                   const reviewer = r.userId || r.user || {};
                   const firstName = reviewer?.firstName || "Tenant";
                   const lastName = reviewer?.lastName || "";
                   const initial = firstName[0]?.toUpperCase() || "T";
                   return (
-                  <div key={i} className="review-card">
-                    <div className="review-header">
-                      <div className="review-ava" style={{background: ["#1a2744","#2a7c6f","#3b6bcc","#c8922a","#e05a3a"][i%5]}}>{initial}</div>
-                      <div>
-                        <div className="review-name">{firstName} {lastName}</div>
-                        <div className="review-date">{new Date(r.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}</div>
+                    <div key={i} className="review-card">
+                      <div className="review-header">
+                        <div className="review-ava" style={{background: ["#1a2744","#2a7c6f","#3b6bcc","#c8922a","#e05a3a"][i%5]}}>{initial}</div>
+                        <div>
+                          <div className="review-name">{firstName} {lastName}</div>
+                          <div className="review-date">{new Date(r.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}</div>
+                        </div>
+                        <div className="review-stars">{"★".repeat(r.rating || 5)}{"☆".repeat(5-(r.rating||5))}</div>
                       </div>
-                      <div className="review-stars">{"★".repeat(r.rating || 5)}{"☆".repeat(5-(r.rating||5))}</div>
+                      <div className="review-text">{r.reviewText}</div>
                     </div>
-                    <div className="review-text">{r.reviewText}</div>
-                  </div>
                   );
                 })
               ) : (
@@ -443,20 +545,41 @@ const PropertyDetails = () => {
             {/* ── RIGHT: Booking Card ── */}
             <div>
               <div className="booking-card">
-                <div className="booking-card-price">₹{property.rent?.toLocaleString()} <span>/ month</span></div>
-                <div className="booking-card-rating">★ {rating} · {reviews.length} reviews · {GENDER_MAP[property.gender]}</div>
-
-                {/* Room type */}
-                <div className="form-group-bc">
-                  <label>Room Type</label>
-                  <div className="room-btns">
-                    {["single", "double", "triple"].map(t => (
-                      <button key={t} className={`room-btn${roomType === t ? " active" : ""}`} onClick={() => setRoomType(t)}>
-                        {t}
-                      </button>
-                    ))}
-                  </div>
+                {/* Dynamic price: show selected room type price */}
+                <div className="booking-card-price">
+                  ₹{selectedPrice.toLocaleString()} <span>/ {availableRoomTypes.length > 1 ? "bed" : "month"}</span>
                 </div>
+                <div className="booking-card-rating">
+                  ★ {avgRating} · {reviews.length} review{reviews.length !== 1 ? "s" : ""} · {GENDER_MAP[property.gender] || property.gender}
+                </div>
+
+                {/* ── Dynamic Room Type Buttons ── */}
+                {availableRoomTypes.length > 0 && (
+                  <div className="form-group-bc">
+                    <label>Room Type</label>
+                    <div className="room-btns">
+                      {availableRoomTypes.map((cat) => {
+                        const isFull = cat.availableRooms !== null && cat.availableRooms <= 0;
+                        return (
+                          <button
+                            key={cat.type}
+                            className={`room-btn${roomType === cat.type ? " active" : ""}${isFull ? " disabled" : ""}`}
+                            onClick={() => !isFull && setRoomType(cat.type)}
+                            disabled={isFull}
+                            title={isFull ? "No rooms available" : `${cat.availableRooms !== null ? cat.availableRooms + " rooms left" : "Available"}`}
+                          >
+                            <span className="room-lbl" style={{ textTransform: "capitalize" }}>{cat.type}</span>
+                            {cat.availableRooms !== null && (
+                              <span className="room-avail">
+                                {isFull ? "Full" : `${cat.availableRooms} left`}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Dates */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -473,13 +596,16 @@ const PropertyDetails = () => {
                 {/* Summary */}
                 {months > 0 && (
                   <div className="booking-summary">
-                    <div className="booking-summary-row"><span>₹{property.rent?.toLocaleString()} × {months} month{months > 1 ? "s" : ""}</span><span>₹{totalRent.toLocaleString()}</span></div>
+                    <div className="booking-summary-row">
+                      <span>₹{selectedPrice.toLocaleString()} × {months} month{months > 1 ? "s" : ""}</span>
+                      <span>₹{totalRent.toLocaleString()}</span>
+                    </div>
                     <div className="booking-summary-row"><span>Platform fee</span><span>₹0</span></div>
                     <div className="booking-summary-row"><span>Total</span><span>₹{totalRent.toLocaleString()}</span></div>
                   </div>
                 )}
 
-                {property.available ? (
+                {isAnyRoomAvailable ? (
                   <button className="btn-reserve teal" onClick={handleReserve}>
                     Reserve Now →
                   </button>
