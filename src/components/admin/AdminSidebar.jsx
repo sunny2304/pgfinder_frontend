@@ -1035,7 +1035,7 @@ export const AdminSidebar = () => {
                         return (
                           <tr key={p._id} className="hover:bg-[#faf9f7]">
                             <td className={`${tdCls} text-[#8a7f74] whitespace-nowrap`}>{fmt(p.createdAt)}</td>
-                            <td className={tdCls}><strong className="text-[#1a2744] text-[0.78rem]">#{p._id?.slice(-6).toUpperCase()}</strong></td>
+                            <td className={tdCls}><strong className="text-[#1a2744] text-[0.78rem]">#{p._id.toUpperCase()}</strong></td>
                             <td className={tdCls}>{p.userId?.firstName || p.bookingId?.tenantId?.firstName || "—"}</td>
                             <td className={tdCls}>{p.bookingId?.pgId?.pgName || "—"}</td>
                             <td className={`${tdCls} font-semibold`}>₹{p.amount?.toLocaleString()}</td>

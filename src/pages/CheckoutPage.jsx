@@ -13,6 +13,24 @@ const PLATFORM_FEE_PCT = 5;
 const inputCls = "w-full bg-[#faf9f7] border-[1.5px] border-[#e2ddd6] rounded-[10px] text-[#1a1a1a] text-[0.92rem] py-3 px-3.5 outline-none transition-all duration-300 focus:border-[#2a7c6f] focus:shadow-[0_0_0_3px_rgba(42,124,111,0.1)] focus:bg-white";
 const labelCls = "block text-[0.7rem] font-bold uppercase tracking-[1px] text-[#8a7f74] mb-1.5";
 
+// ✅ Calculate months between two dates
+// Minimum = 1 month, partial months round UP (e.g. 1.2 months → 2 months)
+const calcMonths = (checkIn, checkOut) => {
+  if (!checkIn || !checkOut) return 1;
+  const start = new Date(checkIn);
+  const end = new Date(checkOut);
+  const diffMs = end - start;
+  if (diffMs <= 0) return 1;
+
+  // Exact months as a decimal
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  const exactMonths = diffDays / 30.44; // average days per month
+
+  // Minimum 1 month; anything above 1 month rounds UP
+  const rounded = Math.ceil(exactMonths);
+  return Math.max(1, rounded);
+};
+
 const CheckoutPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -29,7 +47,7 @@ const CheckoutPage = () => {
   const [cardCvv, setCardCvv] = useState("");
 
   const userId = localStorage.getItem("userId");
-  const { checkInDate, checkOutDate, roomType, months, property } = state || {};
+  const { checkInDate, checkOutDate, roomType, property } = state || {};
 
   if (!property) {
     return (
@@ -44,7 +62,10 @@ const CheckoutPage = () => {
     );
   }
 
-  const totalRent = property.rent * (months || 1);
+  // ✅ Always recalculate months from dates (ignore any months passed in state)
+  const months = calcMonths(checkInDate, checkOutDate);
+
+  const totalRent = property.rent * months;
   const platformFee = Math.round(totalRent * PLATFORM_FEE_PCT / 100);
   const landlordAmount = totalRent - platformFee;
   const imgSrc = PG_IMAGES[property.pgName?.length % PG_IMAGES.length] || PG_IMAGES[0];
@@ -162,7 +183,17 @@ const CheckoutPage = () => {
                   </button>
                 </div>
 
-                <OrderSummary property={property} imgSrc={imgSrc} months={months} totalRent={totalRent} fmt={fmt} showFee={false} />
+                {/* ✅ Pass checkInDate & checkOutDate directly */}
+                <OrderSummary
+                  property={property}
+                  imgSrc={imgSrc}
+                  months={months}
+                  totalRent={totalRent}
+                  checkInDate={checkInDate}
+                  checkOutDate={checkOutDate}
+                  fmt={fmt}
+                  showFee={false}
+                />
               </div>
             </>
           )}
@@ -178,7 +209,6 @@ const CheckoutPage = () => {
                   <div className="bg-white border border-[#e2ddd6] rounded-[14px] p-7 shadow-[0_2px_16px_rgba(26,39,68,0.08)] mb-5">
                     <h3 className="text-[1.12rem] font-bold text-[#1a2744] mb-5 pb-3.5 border-b border-[#e2ddd6]" style={{ fontFamily: "'Fraunces',serif" }}>Payment Method</h3>
 
-                    {/* Active payment method chip */}
                     <div className="flex gap-2.5 mb-5">
                       <div className="border-[1.5px] border-[#2a7c6f] bg-[#e8f5f3] text-[#2a7c6f] rounded-[10px] py-3 px-4.5 flex items-center gap-2 text-[0.84rem] font-semibold">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -229,7 +259,16 @@ const CheckoutPage = () => {
                   </div>
                 </div>
 
-                <OrderSummary property={property} imgSrc={imgSrc} months={months} totalRent={totalRent} fmt={fmt} showFee={true} />
+                <OrderSummary
+                  property={property}
+                  imgSrc={imgSrc}
+                  months={months}
+                  totalRent={totalRent}
+                  checkInDate={checkInDate}
+                  checkOutDate={checkOutDate}
+                  fmt={fmt}
+                  showFee={true}
+                />
               </div>
             </>
           )}
@@ -264,10 +303,10 @@ const CheckoutPage = () => {
                   "Landlord contacts you within 24 hours to schedule a move-in visit.",
                   "Submit your ID verification documents via the portal.",
                   "Move in on your selected date. Welcome home!",
-                ].map((step, i) => (
+                ].map((s, i) => (
                   <div key={i} className="flex gap-3 text-[0.87rem] text-[#3d3730] mb-3 leading-[1.6]">
                     <div className="w-[26px] h-[26px] rounded-full bg-[#2a7c6f] text-white flex items-center justify-center font-bold text-[0.75rem] flex-shrink-0">{i + 1}</div>
-                    {step}
+                    {s}
                   </div>
                 ))}
               </div>
@@ -280,23 +319,36 @@ const CheckoutPage = () => {
   );
 };
 
-const OrderSummary = ({ property, imgSrc, months, totalRent, fmt, showFee }) => (
+// ✅ OrderSummary now receives checkInDate & checkOutDate as props and displays them
+const OrderSummary = ({ property, imgSrc, months, totalRent, checkInDate, checkOutDate, fmt, showFee }) => (
   <div className="bg-white border border-[#e2ddd6] rounded-[14px] p-6 shadow-[0_2px_16px_rgba(26,39,68,0.08)] sticky top-[88px]" style={{ fontFamily: "'Outfit',sans-serif" }}>
-    <h3 className="text-[1.05rem] font-bold text-[#1a2744] mb-4.5" style={{ fontFamily: "'Fraunces',serif" }}>Order Summary</h3>
+    <h3 className="text-[1.05rem] font-bold text-[#1a2744] mb-4" style={{ fontFamily: "'Fraunces',serif" }}>Order Summary</h3>
     <img src={imgSrc} alt={property.pgName} className="w-full h-[136px] object-cover rounded-[10px] mb-3.5 bg-[#f0ede8]" onError={e => { e.target.style.display = "none"; }} />
     <div className="font-bold text-[#1a2744] text-[0.93rem] mb-1" style={{ fontFamily: "'Fraunces',serif" }}>{property.pgName}</div>
     <div className="text-[#8a7f74] text-[0.8rem] mb-4">📍 {property.area ? `${property.area}, ` : ""}{property.city}</div>
 
-    {[
-      { label: `📅 ${fmt(property._checkIn)} → ${fmt(property._checkOut)}`, val: null },
-      { label: `🛏 ${months} month${months !== 1 ? "s" : ""} × ₹${property.rent?.toLocaleString()}`, val: `₹${totalRent.toLocaleString()}` },
-      ...(showFee ? [{ label: "🏷 Booking fee", val: "Free", teal: true }] : []),
-    ].filter(Boolean).map(({ label, val, teal }, i) => (
-      <div key={i} className="flex justify-between text-[0.86rem] py-2 border-b border-[#e2ddd6] text-[#3d3730]">
-        <span>{label}</span>
-        {val && <span className={teal ? "text-[#2a7c6f] font-semibold" : ""}>{val}</span>}
+    {/* ✅ Check-in / Check-out dates from state */}
+    <div className="flex justify-between text-[0.86rem] py-2 border-b border-[#e2ddd6] text-[#3d3730]">
+      <span>📅 Check-in</span>
+      <span className="font-semibold">{fmt(checkInDate)}</span>
+    </div>
+    <div className="flex justify-between text-[0.86rem] py-2 border-b border-[#e2ddd6] text-[#3d3730]">
+      <span>📅 Check-out</span>
+      <span className="font-semibold">{fmt(checkOutDate)}</span>
+    </div>
+
+    {/* ✅ Duration & price breakdown */}
+    <div className="flex justify-between text-[0.86rem] py-2 border-b border-[#e2ddd6] text-[#3d3730]">
+      <span>🛏 {months} month{months !== 1 ? "s" : ""} × ₹{property.rent?.toLocaleString()}</span>
+      <span>₹{totalRent.toLocaleString()}</span>
+    </div>
+
+    {showFee && (
+      <div className="flex justify-between text-[0.86rem] py-2 border-b border-[#e2ddd6] text-[#3d3730]">
+        <span>🏷 Booking fee</span>
+        <span className="text-[#2a7c6f] font-semibold">Free</span>
       </div>
-    ))}
+    )}
 
     <div className="flex justify-between text-[0.96rem] font-bold text-[#1a2744] pt-3">
       <span>Total Amount</span>

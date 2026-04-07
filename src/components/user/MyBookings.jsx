@@ -369,7 +369,7 @@ const MyBookings = () => {
                       <div className="bc-info">
                         <div className="bc-info-item">
                           <div className="bc-info-label">Monthly Rent</div>
-                          <div className="bc-info-val">₹{b.pgId?.rent?.toLocaleString() || "—"}</div>
+                          <div className="bc-info-val">₹{(b.pgId?.roomCategories?.find(c => c.type === b.roomType)?.pricePerBed || b.pgId?.rent)?.toLocaleString() || "—"}</div>
                         </div>
                         <div className="bc-info-item">
                           <div className="bc-info-label">Room Type</div>

@@ -355,7 +355,7 @@ export const BrowsePG = () => {
                           <div className="font-bold text-[1.08rem] text-[#1a2744]">
                             ₹{p.rent?.toLocaleString()} <span className="text-[#8a7f74] text-[0.76rem] font-normal">/month</span>
                           </div>
-                          <div className="text-[0.72rem] text-[#8a7f74] mt-[3px]">{GENDER_MAP[p.gender] || p.gender}</div>
+                          <div className="text-[0.72rem] text-[#8a7f74] mt-[3px]">{p.roomCategories?.length > 1 ? "Starting from · " : ""}{GENDER_MAP[p.gender] || p.gender}</div>
                         </div>
                         <div className="flex items-center gap-1 text-[#c8922a] text-[0.8rem] font-bold">
                           ★ {(4.2 + (idx % 8) * 0.1).toFixed(1)}
