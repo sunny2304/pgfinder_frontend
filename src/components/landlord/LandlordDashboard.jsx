@@ -554,7 +554,7 @@ export default function LandlordDashboard() {
     { id: "add", label: "Add Property", section: "MANAGE", icon: <><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></> },
     { id: "disputes", label: "Disputes", section: null, badge: openDisputesCount, icon: <><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></> },
     { id: "reviews", label: "Reviews", section: null, badge: 0, icon: <><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></> },
-    { id: "messages", label: "Messages", section: null, badge: 5, icon: <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /> },
+
     { id: "earnings", label: "Earnings", section: "FINANCE", icon: <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></> },
   ];
 
@@ -1110,18 +1110,7 @@ export default function LandlordDashboard() {
             );
           })()}
 
-          {/* ══ MESSAGES ══ */}
-          {tab === "messages" && (
-            <div>
-              <div className="mb-8">
-                <h1 className="text-[1.8rem] font-bold text-[#1a2744]" style={{ fontFamily: "'Fraunces',serif" }}>Messages</h1>
-                <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">Communicate with your tenants.</p>
-              </div>
-              <div className="bg-white border border-[#e2ddd6] rounded-[14px] shadow-[0_2px_16px_rgba(26,39,68,0.08)] overflow-hidden">
-                <div className="px-6 py-14 text-center text-[#8a7f74]">Coming soon — messaging feature is under development.</div>
-              </div>
-            </div>
-          )}
+          
 
           {/* ══ EARNINGS ══ */}
           {tab === "earnings" && <EarningsTab payments={payments} myBookings={myBookings} myPropIds={myPropIds} />}
