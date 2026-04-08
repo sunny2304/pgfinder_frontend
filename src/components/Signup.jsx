@@ -23,7 +23,7 @@ export default function Signup() {
   };
   const strength = getStrength(passwordValue);
 
-  // ── submit → POST /api/register
+  // ── submit → POST /register
   const onSubmit = async (data) => {
     setLoading(true);
     try {
@@ -31,8 +31,9 @@ export default function Signup() {
         firstName: data.firstName,
         lastName:  data.lastName,
         email:     data.email,
+        phone:     data.phone,
         password:  data.password,
-        role:      selectedRole,          // "user" | "landlord"
+        role:      selectedRole,
       };
 
       const res = await axios.post("/register", payload);
@@ -47,6 +48,13 @@ export default function Signup() {
       setLoading(false);
     }
   };
+
+  const inputStyle = (hasError) => ({
+    background: "#faf9f7",
+    border: hasError ? "1.5px solid #e05a3a" : "1.5px solid #e2ddd6",
+    fontFamily: "'Outfit', sans-serif",
+    color: "#1a1a1a",
+  });
 
   return (
     <div className="min-h-screen flex" style={{ fontFamily: "'Outfit', sans-serif" }}>
@@ -238,21 +246,12 @@ export default function Signup() {
                 placeholder="Priya"
                 {...register("firstName", { required: "First name is required" })}
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-                style={{
-                  background: "#faf9f7",
-                  border: errors.firstName ? "1.5px solid #e05a3a" : "1.5px solid #e2ddd6",
-                  fontFamily: "'Outfit', sans-serif",
-                  color: "#1a1a1a",
-                }}
+                style={inputStyle(errors.firstName)}
                 onFocus={(e) => (e.target.style.borderColor = "#2a7c6f")}
-                onBlur={(e) =>
-                  (e.target.style.borderColor = errors.firstName ? "#e05a3a" : "#e2ddd6")
-                }
+                onBlur={(e) => (e.target.style.borderColor = errors.firstName ? "#e05a3a" : "#e2ddd6")}
               />
               {errors.firstName && (
-                <p className="text-xs mt-1" style={{ color: "#e05a3a" }}>
-                  {errors.firstName.message}
-                </p>
+                <p className="text-xs mt-1" style={{ color: "#e05a3a" }}>{errors.firstName.message}</p>
               )}
             </div>
 
@@ -265,21 +264,12 @@ export default function Signup() {
                 placeholder="Sharma"
                 {...register("lastName", { required: "Last name is required" })}
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-                style={{
-                  background: "#faf9f7",
-                  border: errors.lastName ? "1.5px solid #e05a3a" : "1.5px solid #e2ddd6",
-                  fontFamily: "'Outfit', sans-serif",
-                  color: "#1a1a1a",
-                }}
+                style={inputStyle(errors.lastName)}
                 onFocus={(e) => (e.target.style.borderColor = "#2a7c6f")}
-                onBlur={(e) =>
-                  (e.target.style.borderColor = errors.lastName ? "#e05a3a" : "#e2ddd6")
-                }
+                onBlur={(e) => (e.target.style.borderColor = errors.lastName ? "#e05a3a" : "#e2ddd6")}
               />
               {errors.lastName && (
-                <p className="text-xs mt-1" style={{ color: "#e05a3a" }}>
-                  {errors.lastName.message}
-                </p>
+                <p className="text-xs mt-1" style={{ color: "#e05a3a" }}>{errors.lastName.message}</p>
               )}
             </div>
           </div>
@@ -297,21 +287,35 @@ export default function Signup() {
                 pattern: { value: /^\S+@\S+\.\S+$/, message: "Enter a valid email" },
               })}
               className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-              style={{
-                background: "#faf9f7",
-                border: errors.email ? "1.5px solid #e05a3a" : "1.5px solid #e2ddd6",
-                fontFamily: "'Outfit', sans-serif",
-                color: "#1a1a1a",
-              }}
+              style={inputStyle(errors.email)}
               onFocus={(e) => (e.target.style.borderColor = "#2a7c6f")}
-              onBlur={(e) =>
-                (e.target.style.borderColor = errors.email ? "#e05a3a" : "#e2ddd6")
-              }
+              onBlur={(e) => (e.target.style.borderColor = errors.email ? "#e05a3a" : "#e2ddd6")}
             />
             {errors.email && (
-              <p className="text-xs mt-1" style={{ color: "#e05a3a" }}>
-                {errors.email.message}
-              </p>
+              <p className="text-xs mt-1" style={{ color: "#e05a3a" }}>{errors.email.message}</p>
+            )}
+          </div>
+
+          {/* ── Phone Number (NEW) ── */}
+          <div className="mb-4">
+            <label className="block text-xs font-bold uppercase mb-2" style={{ letterSpacing: "0.9px", color: "#8a7f74" }}>
+              Mobile Number
+            </label>
+            <input
+              type="tel"
+              placeholder="9876543210"
+              maxLength={10}
+              {...register("phone", {
+                required: "Mobile number is required",
+                pattern: { value: /^[6-9]\d{9}$/, message: "Enter a valid 10-digit mobile number" },
+              })}
+              className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
+              style={inputStyle(errors.phone)}
+              onFocus={(e) => (e.target.style.borderColor = "#2a7c6f")}
+              onBlur={(e) => (e.target.style.borderColor = errors.phone ? "#e05a3a" : "#e2ddd6")}
+            />
+            {errors.phone && (
+              <p className="text-xs mt-1" style={{ color: "#e05a3a" }}>{errors.phone.message}</p>
             )}
           </div>
 
@@ -329,16 +333,9 @@ export default function Signup() {
                   minLength: { value: 6, message: "Password must be at least 6 characters" },
                 })}
                 className="w-full px-4 py-3 pr-11 rounded-xl text-sm outline-none transition-all"
-                style={{
-                  background: "#faf9f7",
-                  border: errors.password ? "1.5px solid #e05a3a" : "1.5px solid #e2ddd6",
-                  fontFamily: "'Outfit', sans-serif",
-                  color: "#1a1a1a",
-                }}
+                style={inputStyle(errors.password)}
                 onFocus={(e) => (e.target.style.borderColor = "#2a7c6f")}
-                onBlur={(e) =>
-                  (e.target.style.borderColor = errors.password ? "#e05a3a" : "#e2ddd6")
-                }
+                onBlur={(e) => (e.target.style.borderColor = errors.password ? "#e05a3a" : "#e2ddd6")}
               />
               <span
                 onClick={() => setShowPassword(!showPassword)}
@@ -360,9 +357,7 @@ export default function Signup() {
               </span>
             </div>
             {errors.password && (
-              <p className="text-xs mt-1" style={{ color: "#e05a3a" }}>
-                {errors.password.message}
-              </p>
+              <p className="text-xs mt-1" style={{ color: "#e05a3a" }}>{errors.password.message}</p>
             )}
           </div>
 
@@ -373,9 +368,7 @@ export default function Signup() {
                 <div
                   key={i}
                   className="flex-1 h-1 rounded-full transition-all duration-300"
-                  style={{
-                    background: i <= strength.score ? strength.color : "#e2ddd6",
-                  }}
+                  style={{ background: i <= strength.score ? strength.color : "#e2ddd6" }}
                 />
               ))}
             </div>
@@ -395,20 +388,12 @@ export default function Signup() {
                 placeholder="Repeat password"
                 {...register("confirmPassword", {
                   required: "Please confirm your password",
-                  validate: (val) =>
-                    val === passwordValue || "Passwords do not match",
+                  validate: (val) => val === passwordValue || "Passwords do not match",
                 })}
                 className="w-full px-4 py-3 pr-11 rounded-xl text-sm outline-none transition-all"
-                style={{
-                  background: "#faf9f7",
-                  border: errors.confirmPassword ? "1.5px solid #e05a3a" : "1.5px solid #e2ddd6",
-                  fontFamily: "'Outfit', sans-serif",
-                  color: "#1a1a1a",
-                }}
+                style={inputStyle(errors.confirmPassword)}
                 onFocus={(e) => (e.target.style.borderColor = "#2a7c6f")}
-                onBlur={(e) =>
-                  (e.target.style.borderColor = errors.confirmPassword ? "#e05a3a" : "#e2ddd6")
-                }
+                onBlur={(e) => (e.target.style.borderColor = errors.confirmPassword ? "#e05a3a" : "#e2ddd6")}
               />
               <span
                 onClick={() => setShowConfirm(!showConfirm)}
@@ -430,13 +415,11 @@ export default function Signup() {
               </span>
             </div>
             {errors.confirmPassword && (
-              <p className="text-xs mt-1" style={{ color: "#e05a3a" }}>
-                {errors.confirmPassword.message}
-              </p>
+              <p className="text-xs mt-1" style={{ color: "#e05a3a" }}>{errors.confirmPassword.message}</p>
             )}
           </div>
 
-          {/* Terms */}
+          {/* Terms — now with real links */}
           <label className="flex items-start gap-2.5 mb-6 cursor-pointer">
             <input
               type="checkbox"
@@ -446,19 +429,17 @@ export default function Signup() {
             />
             <span className="text-sm leading-relaxed" style={{ color: "#3d3730" }}>
               I agree to PGFinder's{" "}
-              <a href="#" className="font-semibold" style={{ color: "#2a7c6f" }}>
+              <Link to="/t&c" target="_blank" className="font-semibold" style={{ color: "#2a7c6f" }}>
                 Terms of Service
-              </a>{" "}
+              </Link>{" "}
               and{" "}
-              <a href="#" className="font-semibold" style={{ color: "#2a7c6f" }}>
+              <Link to="/privacypolicy" target="_blank" className="font-semibold" style={{ color: "#2a7c6f" }}>
                 Privacy Policy
-              </a>
+              </Link>
             </span>
           </label>
           {errors.terms && (
-            <p className="text-xs -mt-4 mb-4" style={{ color: "#e05a3a" }}>
-              {errors.terms.message}
-            </p>
+            <p className="text-xs -mt-4 mb-4" style={{ color: "#e05a3a" }}>{errors.terms.message}</p>
           )}
 
           {/* Submit */}

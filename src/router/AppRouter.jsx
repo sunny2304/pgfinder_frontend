@@ -14,7 +14,6 @@ import UserHome from "../components/user/UserHome";
 import UserProfile from "../components/user/UserProfile";
 import SavedPgs from "../components/user/SavedPgs";
 import MyBookings from "../components/user/MyBookings";
-import EditProfile from "../components/user/EditProfile";
 
 // Public Pages
 import { BrowsePG } from "../pages/BrowsePG";
@@ -59,14 +58,6 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <UserProfile />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "edit-profile",
-        element: (
-          <ProtectedRoute>
-            <EditProfile />
           </ProtectedRoute>
         ),
       },
