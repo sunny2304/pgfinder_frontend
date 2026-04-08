@@ -9,12 +9,27 @@ export default function UserProfile() {
   const [activeTab, setActiveTab] = useState("bookings");
   const [bookings, setBookings] = useState([]);
 
+  // Edit profile state
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) { navigate("/"); return; }
     axios
       .get("/profile", { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setUser(res.data.data))
+      .then((res) => {
+        setUser(res.data.data);
+        setEditFirstName(res.data.data.firstName || "");
+        setEditLastName(res.data.data.lastName || "");
+      })
       .catch(() => {
         toast.error("Session expired. Please login again.");
         localStorage.clear();
@@ -31,6 +46,60 @@ export default function UserProfile() {
       .then((res) => setBookings(res.data || []))
       .catch(() => setBookings([]));
   }, [activeTab]);
+
+  const handleSaveProfile = async () => {
+    if (!editFirstName.trim() || !editLastName.trim()) {
+      toast.error("Name fields cannot be empty");
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put(
+        "/profile-advanced",
+        { firstName: editFirstName, lastName: editLastName },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUser(res.data.data);
+      toast.success("Profile updated successfully!");
+    } catch {
+      toast.error("Failed to update profile");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Please fill all password fields");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        "/profile-advanced",
+        { currentPassword, newPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success("Password changed successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to change password");
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
   const statusColor = (status) => {
     if (status === "confirmed") return { bg: "rgba(42,124,111,0.1)", color: "#2a7c6f" };
@@ -65,15 +134,13 @@ export default function UserProfile() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Outfit:wght@300;400;500;600;700&display=swap');`}</style>
       <div className="bg-[#f5f2ed] min-h-screen" style={{ fontFamily: "'Outfit', sans-serif" }}>
 
-        {/* Profile Header Banner - no top margin/padding, starts right at top of content area */}
+        {/* Profile Header Banner */}
         <div className="bg-[#1a2744] px-6 lg:px-14 py-9 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 80% at 80% 50%, rgba(42,124,111,0.25), transparent)" }} />
           <div className="relative flex items-center gap-6 flex-wrap">
-            {/* Avatar */}
             <div className="w-20 h-20 rounded-full bg-[#2a7c6f] text-white flex items-center justify-center text-[1.8rem] font-bold border-[3px] border-white/20 flex-shrink-0">
               {initials || "U"}
             </div>
-            {/* Info */}
             <div className="flex-1">
               <h1 className="text-[1.7rem] font-bold text-white mb-1.5" style={{ fontFamily: "'Fraunces', serif" }}>
                 {user.firstName} {user.lastName}
@@ -91,7 +158,6 @@ export default function UserProfile() {
                 )}
               </div>
             </div>
-            {/* Settings button instead of Logout */}
             <button
               onClick={() => setActiveTab("settings")}
               className="bg-white/10 border border-white/30 text-white rounded-[10px] py-2.5 px-6 text-[0.88rem] font-bold cursor-pointer transition-all duration-200 hover:bg-white hover:text-[#1a2744]"
@@ -236,59 +302,107 @@ export default function UserProfile() {
             <div>
               <h2 className="text-[1.35rem] font-bold text-[#1a2744] mb-6" style={{ fontFamily: "'Fraunces', serif" }}>Account Settings</h2>
 
-              {/* Personal Info */}
+              {/* Personal Info — Editable */}
               <div className="bg-white border border-[#e2ddd6] rounded-[14px] p-7 shadow-[0_2px_16px_rgba(26,39,68,0.08)] mb-5">
                 <h3 className="font-bold text-[1rem] text-[#1a2744] mb-6 pb-3.5 border-b border-[#e2ddd6]" style={{ fontFamily: "'Fraunces', serif" }}>Personal Information</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
-                  {[
-                    { label: "First Name", val: user.firstName || "" },
-                    { label: "Last Name", val: user.lastName || "" },
-                    { label: "Email", val: user.email || "" },
-                    { label: "Phone", val: user.phone || "" },
-                  ].map((field) => (
-                    <div key={field.label}>
-                      <label className="block text-[0.7rem] font-bold uppercase tracking-[1.2px] text-[#8a7f74] mb-2">{field.label}</label>
-                      <input
-                        defaultValue={field.val}
-                        className="w-full bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] text-[#1a1a1a] text-[0.9rem] py-3 px-3.5 outline-none"
-                        style={{ fontFamily: "'Outfit', sans-serif" }}
-                        readOnly
-                      />
-                    </div>
-                  ))}
+                  {/* Editable: First Name */}
+                  <div>
+                    <label className="block text-[0.7rem] font-bold uppercase tracking-[1.2px] text-[#8a7f74] mb-2">First Name</label>
+                    <input
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      className="w-full bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] text-[#1a1a1a] text-[0.9rem] py-3 px-3.5 outline-none focus:border-[#2a7c6f] transition-colors duration-200"
+                      style={{ fontFamily: "'Outfit', sans-serif" }}
+                    />
+                  </div>
+                  {/* Editable: Last Name */}
+                  <div>
+                    <label className="block text-[0.7rem] font-bold uppercase tracking-[1.2px] text-[#8a7f74] mb-2">Last Name</label>
+                    <input
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      className="w-full bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] text-[#1a1a1a] text-[0.9rem] py-3 px-3.5 outline-none focus:border-[#2a7c6f] transition-colors duration-200"
+                      style={{ fontFamily: "'Outfit', sans-serif" }}
+                    />
+                  </div>
+                  {/* Read-only: Email */}
+                  <div>
+                    <label className="block text-[0.7rem] font-bold uppercase tracking-[1.2px] text-[#8a7f74] mb-2">Email</label>
+                    <input
+                      value={user.email || ""}
+                      readOnly
+                      className="w-full bg-[#f0ede8] border border-[#e2ddd6] rounded-[9px] text-[#8a7f74] text-[0.9rem] py-3 px-3.5 outline-none cursor-not-allowed"
+                      style={{ fontFamily: "'Outfit', sans-serif" }}
+                    />
+                    <p className="text-[0.72rem] text-[#8a7f74] mt-1">Email cannot be changed</p>
+                  </div>
+                  {/* Read-only: Phone */}
+                  <div>
+                    <label className="block text-[0.7rem] font-bold uppercase tracking-[1.2px] text-[#8a7f74] mb-2">Phone</label>
+                    <input
+                      value={user.phone || ""}
+                      readOnly
+                      className="w-full bg-[#f0ede8] border border-[#e2ddd6] rounded-[9px] text-[#8a7f74] text-[0.9rem] py-3 px-3.5 outline-none cursor-not-allowed"
+                      style={{ fontFamily: "'Outfit', sans-serif" }}
+                    />
+                  </div>
                 </div>
                 <button
-                  onClick={() => navigate("/user/edit-profile")}
-                  className="bg-[#2a7c6f] text-white border-none rounded-[10px] py-3 px-6 font-semibold cursor-pointer text-[0.9rem] hover:bg-[#3a9e8e] transition-colors duration-200"
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile}
+                  className="bg-[#2a7c6f] text-white border-none rounded-[10px] py-3 px-6 font-semibold cursor-pointer text-[0.9rem] hover:bg-[#3a9e8e] transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ fontFamily: "'Outfit', sans-serif" }}
                 >
-                  Edit Profile →
+                  {savingProfile ? "Saving…" : "Save Changes"}
                 </button>
               </div>
 
-              {/* Security */}
+              {/* Security — Change Password */}
               <div className="bg-white border border-[#e2ddd6] rounded-[14px] p-7 shadow-[0_2px_16px_rgba(26,39,68,0.08)]">
-                <h3 className="font-bold text-[1rem] text-[#1a2744] mb-6 pb-3.5 border-b border-[#e2ddd6]" style={{ fontFamily: "'Fraunces', serif" }}>Security</h3>
+                <h3 className="font-bold text-[1rem] text-[#1a2744] mb-6 pb-3.5 border-b border-[#e2ddd6]" style={{ fontFamily: "'Fraunces', serif" }}>Change Password</h3>
                 <div className="mb-4">
                   <label className="block text-[0.7rem] font-bold uppercase tracking-[1.2px] text-[#8a7f74] mb-2">Current Password</label>
-                  <input type="password" placeholder="••••••••" className="w-full bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] text-[#1a1a1a] text-[0.9rem] py-3 px-3.5 outline-none" style={{ fontFamily: "'Outfit', sans-serif" }} />
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] text-[#1a1a1a] text-[0.9rem] py-3 px-3.5 outline-none focus:border-[#2a7c6f] transition-colors duration-200"
+                    style={{ fontFamily: "'Outfit', sans-serif" }}
+                  />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
                   <div>
                     <label className="block text-[0.7rem] font-bold uppercase tracking-[1.2px] text-[#8a7f74] mb-2">New Password</label>
-                    <input type="password" placeholder="••••••••" className="w-full bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] text-[#1a1a1a] text-[0.9rem] py-3 px-3.5 outline-none" style={{ fontFamily: "'Outfit', sans-serif" }} />
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] text-[#1a1a1a] text-[0.9rem] py-3 px-3.5 outline-none focus:border-[#2a7c6f] transition-colors duration-200"
+                      style={{ fontFamily: "'Outfit', sans-serif" }}
+                    />
                   </div>
                   <div>
                     <label className="block text-[0.7rem] font-bold uppercase tracking-[1.2px] text-[#8a7f74] mb-2">Confirm Password</label>
-                    <input type="password" placeholder="••••••••" className="w-full bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] text-[#1a1a1a] text-[0.9rem] py-3 px-3.5 outline-none" style={{ fontFamily: "'Outfit', sans-serif" }} />
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] text-[#1a1a1a] text-[0.9rem] py-3 px-3.5 outline-none focus:border-[#2a7c6f] transition-colors duration-200"
+                      style={{ fontFamily: "'Outfit', sans-serif" }}
+                    />
                   </div>
                 </div>
                 <button
-                  onClick={() => toast.success("Password changed successfully")}
-                  className="bg-[#f0ede8] text-[#3d3730] border-none rounded-[10px] py-3 px-6 font-semibold cursor-pointer text-[0.9rem] hover:bg-[#e2ddd6] transition-colors duration-200"
+                  onClick={handleChangePassword}
+                  disabled={changingPassword}
+                  className="bg-[#f0ede8] text-[#3d3730] border-none rounded-[10px] py-3 px-6 font-semibold cursor-pointer text-[0.9rem] hover:bg-[#e2ddd6] transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ fontFamily: "'Outfit', sans-serif" }}
                 >
-                  Change Password
+                  {changingPassword ? "Changing…" : "Change Password"}
                 </button>
               </div>
             </div>

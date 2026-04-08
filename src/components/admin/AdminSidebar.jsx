@@ -6,6 +6,20 @@ import { toast } from "react-toastify";
 const PLATFORM_FEE_PCT = 5;
 const fmt = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
+const monthsDiff = (d1, d2) => {
+  if (!d1 || !d2) return 0;
+  const diff = (new Date(d2) - new Date(d1)) / (1000 * 60 * 60 * 24 * 30);
+  return Math.max(1, Math.round(diff));
+};
+
+const getPriceForRoomType = (property, roomType) => {
+  if (property?.roomCategories?.length > 0 && roomType) {
+    const cat = property.roomCategories.find(c => c.type === roomType);
+    if (cat?.pricePerBed) return cat.pricePerBed;
+  }
+  return property?.rent || 0;
+};
+
 const pillClass = (s) => {
   if (!s) return "inline-flex items-center gap-1.5 text-[0.72rem] font-bold py-1 px-2.5 rounded-full bg-[#fdf6e8] text-[#c8922a]";
   const v = s.toLowerCase();
@@ -810,9 +824,12 @@ export const AdminSidebar = () => {
               <div className="bg-white border border-[#e2ddd6] rounded-[14px] shadow-[0_2px_16px_rgba(26,39,68,0.08)] overflow-hidden mb-5">
                 <div className="adm-table-wrap">
                   <table className="w-full border-collapse">
-                    <thead><tr>{["Tenant", "Property", "Check-In", "Check-Out", "Room", "Status", "Action"].map(h => <th key={h} className={thCls}>{h}</th>)}</tr></thead>
+                    <thead><tr>{["Tenant", "Property", "Check-In", "Check-Out", "Room", "Amount", "Status", "Action"].map(h => <th key={h} className={thCls}>{h}</th>)}</tr></thead>
                     <tbody>
-                      {pagedBookings.map(b => (
+                      {pagedBookings.map(b => {
+                        const months = monthsDiff(b.checkInDate, b.checkOutDate);
+                        const amount = getPriceForRoomType(b.pgId, b.roomType) * months;
+                        return (
                         <tr key={b._id} className="hover:bg-[#faf9f7]">
                           <td className={tdCls}>
                             <strong>{b.tenantId?.firstName || "—"} {b.tenantId?.lastName || ""}</strong>
@@ -822,6 +839,7 @@ export const AdminSidebar = () => {
                           <td className={tdCls}>{fmt(b.checkInDate)}</td>
                           <td className={tdCls}>{fmt(b.checkOutDate)}</td>
                           <td className={`${tdCls} capitalize`}>{b.roomType}</td>
+                          <td className={tdCls}>₹{amount.toLocaleString()}</td>
                           <td className={tdCls}><span className={pillClass(b.bookingStatus)}><PillDot s={b.bookingStatus} />{b.bookingStatus}</span></td>
                           <td className={tdCls}>
                             <div className="flex gap-1.5 flex-wrap">
@@ -836,8 +854,9 @@ export const AdminSidebar = () => {
                             </div>
                           </td>
                         </tr>
-                      ))}
-                      {filteredBookings.length === 0 && <tr><td colSpan={7} className="text-center text-[#8a7f74] py-6">No bookings found.</td></tr>}
+                        );
+                      })}
+                      {filteredBookings.length === 0 && <tr><td colSpan={8} className="text-center text-[#8a7f74] py-6">No bookings found.</td></tr>}
                     </tbody>
                   </table>
                 </div>

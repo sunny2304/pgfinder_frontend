@@ -45,6 +45,15 @@ const BtnSm = ({ cls, onClick, children, type = "button", disabled }) => (
   </button>
 );
 
+// ── Get price per bed for a specific room type from a property ─────────────
+const getPriceForRoomType = (property, roomType) => {
+  if (property?.roomCategories?.length > 0 && roomType) {
+    const cat = property.roomCategories.find(c => c.type === roomType);
+    if (cat?.pricePerBed) return cat.pricePerBed;
+  }
+  return property?.rent || 0;
+};
+
 // ── Get total/available rooms from property ────────────────────────────────
 const getRoomSummary = (property) => {
   if (property.roomCategories && property.roomCategories.length > 0) {
@@ -317,7 +326,7 @@ const EditPropertyModal = ({ property, onClose, onSave }) => {
 const BookingDetailModal = ({ booking, onClose }) => {
   if (!booking) return null;
   const months = monthsDiff(booking.checkInDate, booking.checkOutDate);
-  const rent = booking.pgId?.rent || 0;
+  const rent = getPriceForRoomType(booking.pgId, booking.roomType);
   const amount = rent * months;
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
@@ -774,7 +783,7 @@ export default function LandlordDashboard() {
                   <tbody>
                     {myBookings.map(b => {
                       const months = monthsDiff(b.checkInDate, b.checkOutDate);
-                      const amount = (b.pgId?.rent || 0) * months;
+                      const amount = getPriceForRoomType(b.pgId, b.roomType) * months;
                       const existingDispute = getDisputeForBooking(b._id);
                       const isConfirmed = b.bookingStatus === "confirmed";
                       return (

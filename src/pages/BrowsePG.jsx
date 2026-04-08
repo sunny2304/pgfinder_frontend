@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const GENDER_MAP = { male: "Boys Only", female: "Girls Only", unisex: "Co-ed" };
@@ -8,14 +8,6 @@ const AMENITY_ICONS = {
   wifi: "", meals: "", laundry: "", ac: "",
   gym: "", parking: "", security: "",
 };
-const PG_IMAGES = [
-  "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=500&q=70",
-  "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=500&q=70",
-  "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500&q=70",
-  "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500&q=70",
-  "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=500&q=70",
-  "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=500&q=70",
-];
 
 export const BrowsePG = () => {
   const navigate = useNavigate();
@@ -51,8 +43,6 @@ export const BrowsePG = () => {
       else if (currentSort === "high") data = [...data].sort((a, b) => b.rent - a.rent);
       else if (currentSort === "newest") data = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setProperties(data);
-
-      // Fetch real images for all properties in parallel (silently)
       fetchAllImages(data);
     } catch {
       toast.error("Failed to load properties");
@@ -61,7 +51,7 @@ export const BrowsePG = () => {
     }
   };
 
-  // Fetch images for all properties — populates propertyImages map
+  // Fetch images for all properties from DB — no fallback
   const fetchAllImages = async (props) => {
     const results = await Promise.allSettled(
       props.map(p =>
@@ -82,7 +72,7 @@ export const BrowsePG = () => {
     setPropertyImages(map);
   };
 
-  // Read URL params on mount (from UserHome search) and pre-fill filters, then fetch
+  // Read URL params on mount and pre-fill filters, then fetch
   useEffect(() => {
     const loc = searchParams.get("location") || "";
     const minP = searchParams.get("minPrice") || "";
@@ -90,13 +80,11 @@ export const BrowsePG = () => {
     const rt = searchParams.get("roomType") || "";
     const gen = searchParams.get("gender") || "";
 
-    // Pre-fill sidebar filter state from URL
     if (loc) setLocation(loc);
     if (minP) setMinPrice(minP);
     if (maxP) setMaxPrice(maxP);
     if (gen) setGender(gen);
 
-    // Build params directly from URL (state update is async, so pass them inline)
     const fetchWithUrlParams = async () => {
       setLoading(true);
       try {
@@ -150,6 +138,18 @@ export const BrowsePG = () => {
     return { bg: "#e05a3a", label: "New" };
   };
 
+  // No-image placeholder card section
+  const NoImagePlaceholder = () => (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-[#f0ede8] gap-2">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c5bfb8" strokeWidth="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21,15 16,10 5,21"/>
+      </svg>
+      <span className="text-[0.72rem] text-[#8a7f74] font-medium">No photos yet</span>
+    </div>
+  );
+
   return (
     <>
       <style>{`
@@ -163,7 +163,7 @@ export const BrowsePG = () => {
 
       <div className="flex min-h-[calc(100vh-68px)]" style={{ fontFamily: "'Outfit', sans-serif" }}>
 
-        {/* Filter Sidebar - hidden on mobile */}
+        {/* Filter Sidebar */}
         <aside className="hidden md:block w-[272px] flex-shrink-0 bg-white border-r border-[#e2ddd6] px-5 py-7 sticky top-[68px] h-[calc(100vh-68px)] overflow-y-auto">
           <div className="flex items-center justify-between mb-6 pb-3.5 border-b border-[#e2ddd6]">
             <span className="font-bold text-[1.05rem] text-[#1a2744]" style={{ fontFamily: "'Fraunces', serif" }}>Filters</span>
@@ -289,9 +289,7 @@ export const BrowsePG = () => {
             <div className="grid gap-[22px]" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))" }}>
               {properties.map((p, idx) => {
                 const badge = getBadge(p, idx);
-                // Use first uploaded image if available, otherwise fall back to stock photo
                 const realImages = propertyImages[p._id] || [];
-                const imgSrc = realImages.length > 0 ? realImages[0] : PG_IMAGES[idx % PG_IMAGES.length];
                 const isSaved = wishlist.includes(p._id);
 
                 return (
@@ -301,21 +299,20 @@ export const BrowsePG = () => {
                     onClick={() => navigate(`/property/${p._id}`)}
                   >
                     {/* Image */}
-                    <div className="h-[195px] relative overflow-hidden bg-[#f0ede8]">
-                      <img
-                        src={imgSrc}
-                        alt={p.pgName}
-                        className="w-full h-full object-cover transition-transform duration-400"
-                        onError={(e) => {
-                          // Fall back to stock photo if real image fails
-                          const fallback = PG_IMAGES[idx % PG_IMAGES.length];
-                          if (e.target.src !== fallback) e.target.src = fallback;
-                        }}
-                      />
+                    <div className="h-[195px] relative overflow-hidden bg-[#f0ede8] flex-shrink-0">
+                      {realImages.length > 0 ? (
+                        <img
+                          src={realImages[0]}
+                          alt={p.pgName}
+                          className="w-full h-full object-cover transition-transform duration-400"
+                        />
+                      ) : (
+                        <NoImagePlaceholder />
+                      )}
                       <div className="absolute top-3 left-3 text-[0.67rem] font-bold tracking-[0.5px] py-1 px-[11px] rounded-[6px] text-white" style={{ background: badge.bg }}>
                         {badge.label}
                       </div>
-                      {/* Real photo count badge */}
+                      {/* Photo count badge */}
                       {realImages.length > 1 && (
                         <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/55 text-white text-[0.65rem] font-semibold py-[3px] px-2 rounded-[5px] backdrop-blur-sm">
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
