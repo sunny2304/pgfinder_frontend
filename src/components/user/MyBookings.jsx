@@ -383,6 +383,16 @@ const MyBookings = () => {
                           <div className="bc-info-label">Check-out</div>
                           <div className="bc-info-val">{fmt(b.checkOutDate)}</div>
                         </div>
+                        {b.checkInDate && b.checkOutDate && (() => {
+                          const months = Math.round((new Date(b.checkOutDate) - new Date(b.checkInDate)) / (1000 * 60 * 60 * 24 * 30.44));
+                          const price = b.pgId?.roomCategories?.find(c => c.type === b.roomType)?.pricePerBed || b.pgId?.rent || 0;
+                          return (
+                            <div className="bc-info-item">
+                              <div className="bc-info-label">Total Rent</div>
+                              <div className="bc-info-val">₹{(price * Math.max(1, months)).toLocaleString()}</div>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Show dispute status badge if one exists */}

@@ -407,10 +407,7 @@ export default function LandlordDashboard() {
     .filter(b => myPropIds.includes(b.pgId?._id || b.pgId))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const pendingBookings = myBookings.filter(b => b.bookingStatus === "pending");
-  const myRevenue = payments.filter(p => {
-    const pgId = p.bookingId?.pgId?._id || p.bookingId?.pgId || p.booking?.pgId?._id || p.booking?.pgId;
-    return myPropIds.includes(pgId) || myPropIds.includes(String(pgId));
-  }).filter(p => p.paymentStatus === "success").reduce((s, p) => s + (p.landlordAmount || p.amount || 0), 0);
+  const myRevenue = payments.filter(p => myPropIds.includes(p.bookingId?.pgId)).reduce((s, p) => s + (p.landlordAmount || p.amount || 0), 0);
   const openDisputesCount = myDisputes.filter(d => d.status === "open").length;
 
   const updateStatus = async (bookingId, status) => {
@@ -622,9 +619,9 @@ export default function LandlordDashboard() {
                   { label: "Total Properties", val: properties.length, sub: `${properties.filter(p => p.available).length} active · ${properties.filter(p => !p.available).length} paused`, iconCls: "bg-[#e8f5f3] text-[#2a7c6f]", icon: <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /> },
                   { label: "Active Tenants", val: myBookings.filter(b => b.bookingStatus === "confirmed").length, sub: "Confirmed bookings", subUp: true, iconCls: "bg-[rgba(26,39,68,0.07)] text-[#1a2744]", icon: <><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /></> },
                   { label: "Pending Requests", val: pendingBookings.length, sub: "Awaiting review", iconCls: "bg-[#eef2fb] text-[#3b6bcc]", icon: <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /> },
-                  { label: "Total Revenue", val: `₹${myRevenue.toLocaleString()}`, sub: "View earnings →", subUp: true, iconCls: "bg-[#fdf6e8] text-[#c8922a]", icon: <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></>, numSm: true, onClick: () => setTab("earnings") },
+                  { label: "Monthly Revenue", val: `₹${myRevenue.toLocaleString()}`, sub: "From payments", subUp: true, iconCls: "bg-[#fdf6e8] text-[#c8922a]", icon: <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></>, numSm: true },
                 ].map(s => (
-                  <div key={s.label} onClick={s.onClick} className={`bg-white border border-[#e2ddd6] rounded-[14px] p-6 transition-all duration-300 shadow-[0_2px_16px_rgba(26,39,68,0.08)] hover:shadow-[0_8px_40px_rgba(26,39,68,0.13)] hover:-translate-y-0.5 ${s.onClick ? "cursor-pointer" : ""}`}>
+                  <div key={s.label} className="bg-white border border-[#e2ddd6] rounded-[14px] p-6 transition-all duration-300 shadow-[0_2px_16px_rgba(26,39,68,0.08)] hover:shadow-[0_8px_40px_rgba(26,39,68,0.13)] hover:-translate-y-0.5">
                     <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center mb-3.5 ${s.iconCls}`}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px]">{s.icon}</svg>
                     </div>
@@ -777,8 +774,7 @@ export default function LandlordDashboard() {
                   <tbody>
                     {myBookings.map(b => {
                       const months = monthsDiff(b.checkInDate, b.checkOutDate);
-                      const roomPrice = b.pgId?.roomCategories?.find(c => c.type === b.roomType)?.pricePerBed || b.pgId?.rent || 0;
-                      const amount = roomPrice * months;
+                      const amount = (b.pgId?.rent || 0) * months;
                       const existingDispute = getDisputeForBooking(b._id);
                       const isConfirmed = b.bookingStatus === "confirmed";
                       return (

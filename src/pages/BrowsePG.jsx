@@ -66,7 +66,12 @@ export const BrowsePG = () => {
     const results = await Promise.allSettled(
       props.map(p =>
         axios.get(`/propertyimage/${p._id}`)
-          .then(r => ({ id: p._id, urls: (r.data?.images || []).map(img => img.imageUrl).filter(Boolean) }))
+          .then(r => {
+            const d = r.data;
+            const arr = Array.isArray(d) ? d : (d?.images || d?.data || []);
+            const urls = arr.map(img => img?.imageUrl || img?.url || img).filter(s => typeof s === "string" && s.startsWith("http"));
+            return { id: p._id, urls };
+          })
           .catch(() => ({ id: p._id, urls: [] }))
       )
     );

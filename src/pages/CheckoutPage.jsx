@@ -65,7 +65,12 @@ const CheckoutPage = () => {
   // ✅ Always recalculate months from dates (ignore any months passed in state)
   const months = calcMonths(checkInDate, checkOutDate);
 
-  const totalRent = property.rent * months;
+  // Look up the correct price for the selected room type.
+  // property.rent is always the MINIMUM price, so we find the matching category instead.
+  const bookedCategory = property.roomCategories?.find((c) => c.type === roomType);
+  const pricePerBed = bookedCategory?.pricePerBed || property.rent || 0;
+
+  const totalRent = pricePerBed * months;
   const platformFee = Math.round(totalRent * PLATFORM_FEE_PCT / 100);
   const landlordAmount = totalRent - platformFee;
   const imgSrc = PG_IMAGES[property.pgName?.length % PG_IMAGES.length] || PG_IMAGES[0];
@@ -155,8 +160,8 @@ const CheckoutPage = () => {
                         { label: "Location", val: `${property.area ? property.area + ", " : ""}${property.city}` },
                         { label: "Room Type", val: roomType, capitalize: true },
                         { label: "Check-in", val: fmt(checkInDate) },
-                        { label: "Check-out", val: fmt(checkOutDate) },
                         { label: "Duration", val: `${months} month${months !== 1 ? "s" : ""}` },
+                        { label: "Check-out", val: fmt(checkOutDate) },
                       ].map(({ label, val, capitalize }) => (
                         <div key={label} className="flex justify-between text-[0.9rem]">
                           <span className="font-semibold text-[#3d3730]">{label}</span>
@@ -188,6 +193,8 @@ const CheckoutPage = () => {
                   property={property}
                   imgSrc={imgSrc}
                   months={months}
+                  pricePerBed={pricePerBed}
+                  roomType={roomType}
                   totalRent={totalRent}
                   checkInDate={checkInDate}
                   checkOutDate={checkOutDate}
@@ -263,6 +270,8 @@ const CheckoutPage = () => {
                   property={property}
                   imgSrc={imgSrc}
                   months={months}
+                  pricePerBed={pricePerBed}
+                  roomType={roomType}
                   totalRent={totalRent}
                   checkInDate={checkInDate}
                   checkOutDate={checkOutDate}
@@ -319,27 +328,29 @@ const CheckoutPage = () => {
   );
 };
 
-// ✅ OrderSummary now receives checkInDate & checkOutDate as props and displays them
-const OrderSummary = ({ property, imgSrc, months, totalRent, checkInDate, checkOutDate, fmt, showFee }) => (
+// ✅ OrderSummary shows check-in, duration, and derived check-out
+const OrderSummary = ({ property, imgSrc, months, pricePerBed, roomType, totalRent, checkInDate, checkOutDate, fmt, showFee }) => (
   <div className="bg-white border border-[#e2ddd6] rounded-[14px] p-6 shadow-[0_2px_16px_rgba(26,39,68,0.08)] sticky top-[88px]" style={{ fontFamily: "'Outfit',sans-serif" }}>
     <h3 className="text-[1.05rem] font-bold text-[#1a2744] mb-4" style={{ fontFamily: "'Fraunces',serif" }}>Order Summary</h3>
     <img src={imgSrc} alt={property.pgName} className="w-full h-[136px] object-cover rounded-[10px] mb-3.5 bg-[#f0ede8]" onError={e => { e.target.style.display = "none"; }} />
     <div className="font-bold text-[#1a2744] text-[0.93rem] mb-1" style={{ fontFamily: "'Fraunces',serif" }}>{property.pgName}</div>
     <div className="text-[#8a7f74] text-[0.8rem] mb-4">📍 {property.area ? `${property.area}, ` : ""}{property.city}</div>
 
-    {/* ✅ Check-in / Check-out dates from state */}
     <div className="flex justify-between text-[0.86rem] py-2 border-b border-[#e2ddd6] text-[#3d3730]">
       <span>📅 Check-in</span>
       <span className="font-semibold">{fmt(checkInDate)}</span>
+    </div>
+    <div className="flex justify-between text-[0.86rem] py-2 border-b border-[#e2ddd6] text-[#3d3730]">
+      <span>⏱ Duration</span>
+      <span className="font-semibold">{months} month{months !== 1 ? "s" : ""}</span>
     </div>
     <div className="flex justify-between text-[0.86rem] py-2 border-b border-[#e2ddd6] text-[#3d3730]">
       <span>📅 Check-out</span>
       <span className="font-semibold">{fmt(checkOutDate)}</span>
     </div>
 
-    {/* ✅ Duration & price breakdown */}
     <div className="flex justify-between text-[0.86rem] py-2 border-b border-[#e2ddd6] text-[#3d3730]">
-      <span>🛏 {months} month{months !== 1 ? "s" : ""} × ₹{property.rent?.toLocaleString()}</span>
+      <span>🛏 {months} month{months !== 1 ? "s" : ""} × ₹{pricePerBed?.toLocaleString()} ({roomType})</span>
       <span>₹{totalRent.toLocaleString()}</span>
     </div>
 

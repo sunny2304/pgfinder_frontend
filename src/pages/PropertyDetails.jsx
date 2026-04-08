@@ -177,9 +177,18 @@ const PropertyDetails = () => {
 
   // Booking form
   const [checkInDate, setCheckInDate] = useState("");
-  const [checkOutDate, setCheckOutDate] = useState("");
+  const [duration, setDuration] = useState(1); // months: 1, 3, 6, 12
   const [roomType, setRoomType] = useState(""); // will be set after property loads
-  const [months, setMonths] = useState(0);
+
+  // Derive checkOutDate from checkInDate + duration
+  const getCheckOutDate = (checkIn, months) => {
+    if (!checkIn) return "";
+    const d = new Date(checkIn);
+    d.setMonth(d.getMonth() + months);
+    return d.toISOString().split("T")[0];
+  };
+  const checkOutDate = getCheckOutDate(checkInDate, duration);
+  const months = duration;
 
   // Wishlist
   const [wishlist, setWishlist] = useState(() => {
@@ -206,7 +215,10 @@ const PropertyDetails = () => {
         }
         if (revRes.status === "fulfilled") setReviews(revRes.value.data || []);
         if (imgRes.status === "fulfilled") {
-          const imgs = (imgRes.value.data?.images || []).map(img => img.imageUrl).filter(Boolean);
+          const d = imgRes.value.data;
+          // Handle: { images: [{imageUrl}] } OR { data: [{imageUrl}] } OR [{imageUrl}] OR {images:[{url}]}
+          const arr = Array.isArray(d) ? d : (d?.images || d?.data || []);
+          const imgs = arr.map(img => img?.imageUrl || img?.url || img).filter(s => typeof s === "string" && s.startsWith("http"));
           setPropertyImages(imgs);
         }
       } catch {
@@ -218,12 +230,8 @@ const PropertyDetails = () => {
     load();
   }, [id]);
 
-  useEffect(() => {
-    if (checkInDate && checkOutDate) {
-      const diff = (new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24 * 30);
-      setMonths(Math.max(0, Math.round(diff)));
-    }
-  }, [checkInDate, checkOutDate]);
+
+
 
   const toggleWishlist = () => {
     const isSaved = wishlist.includes(id);
@@ -242,12 +250,8 @@ const PropertyDetails = () => {
   };
 
   const handleReserve = () => {
-    if (!checkInDate || !checkOutDate) {
-      toast.error("Please select check-in and check-out dates");
-      return;
-    }
-    if (new Date(checkOutDate) <= new Date(checkInDate)) {
-      toast.error("Check-out must be after check-in");
+    if (!checkInDate) {
+      toast.error("Please select a check-in date");
       return;
     }
     // Check availability of selected room type
@@ -547,7 +551,7 @@ const PropertyDetails = () => {
               <div className="booking-card">
                 {/* Dynamic price: show selected room type price */}
                 <div className="booking-card-price">
-                  ₹{selectedPrice.toLocaleString()} <span>/ {availableRoomTypes.length > 1 ? "bed" : "month"}</span>
+                  ₹{selectedPrice.toLocaleString()} <span>/ month</span>
                 </div>
                 <div className="booking-card-rating">
                   ★ {avgRating} · {reviews.length} review{reviews.length !== 1 ? "s" : ""} · {GENDER_MAP[property.gender] || property.gender}
@@ -581,20 +585,37 @@ const PropertyDetails = () => {
                   </div>
                 )}
 
-                {/* Dates */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <div className="form-group-bc">
-                    <label>Check-in</label>
-                    <input type="date" className="form-input-bc" value={checkInDate} min={new Date().toISOString().split("T")[0]} onChange={e => setCheckInDate(e.target.value)} />
-                  </div>
-                  <div className="form-group-bc">
-                    <label>Check-out</label>
-                    <input type="date" className="form-input-bc" value={checkOutDate} min={checkInDate || new Date().toISOString().split("T")[0]} onChange={e => setCheckOutDate(e.target.value)} />
-                  </div>
+                {/* Check-in Date */}
+                <div className="form-group-bc">
+                  <label>Check-in Date</label>
+                  <input type="date" className="form-input-bc" value={checkInDate} min={new Date().toISOString().split("T")[0]} onChange={e => setCheckInDate(e.target.value)} />
                 </div>
 
+                {/* Duration Dropdown */}
+                <div className="form-group-bc">
+                  <label>Duration of Stay</label>
+                  <select
+                    className="form-input-bc"
+                    value={duration}
+                    onChange={e => setDuration(Number(e.target.value))}
+                    style={{ fontFamily: "'Outfit',sans-serif", cursor: "pointer" }}
+                  >
+                    <option value={1}>1 Month</option>
+                    <option value={3}>3 Months</option>
+                    <option value={6}>6 Months</option>
+                    <option value={12}>12 Months</option>
+                  </select>
+                </div>
+
+                {/* Show derived check-out */}
+                {checkInDate && (
+                  <div style={{ fontSize: "0.78rem", color: "var(--muted)", marginBottom: 10, fontFamily: "'Outfit',sans-serif" }}>
+                    📅 Check-out: <strong style={{ color: "var(--navy)" }}>{new Date(checkOutDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</strong>
+                  </div>
+                )}
+
                 {/* Summary */}
-                {months > 0 && (
+                {checkInDate && (
                   <div className="booking-summary">
                     <div className="booking-summary-row">
                       <span>₹{selectedPrice.toLocaleString()} × {months} month{months > 1 ? "s" : ""}</span>
