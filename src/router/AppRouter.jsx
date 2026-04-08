@@ -30,17 +30,20 @@ import ProtectedRoute from "../hooks/ProtectedRoutes";
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <UserNavbar />,
+    element: (
+      <ProtectedRoute role="user">
+        <UserNavbar />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <UserHome /> },
       { path: "browse", element: <BrowsePG /> },
       { path: "property/:id", element: <PropertyDetails /> },
 
-      // 🔐 Protected Routes
       {
         path: "bookings",
         element: (
-          <ProtectedRoute>
+          <ProtectedRoute role="user">
             <MyBookings />
           </ProtectedRoute>
         ),
@@ -48,7 +51,7 @@ const router = createBrowserRouter([
       {
         path: "savedpgs",
         element: (
-          <ProtectedRoute>
+          <ProtectedRoute role="user">
             <SavedPgs />
           </ProtectedRoute>
         ),
@@ -56,7 +59,7 @@ const router = createBrowserRouter([
       {
         path: "profile",
         element: (
-          <ProtectedRoute>
+          <ProtectedRoute role="user">
             <UserProfile />
           </ProtectedRoute>
         ),
@@ -64,7 +67,7 @@ const router = createBrowserRouter([
       {
         path: "checkout/:id",
         element: (
-          <ProtectedRoute>
+          <ProtectedRoute role="user">
             <CheckoutPage />
           </ProtectedRoute>
         ),
@@ -76,18 +79,25 @@ const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
   { path: "/signup", element: <Signup /> },
 
-  // 🔐 Landlord (Protected)
+  // 🔐 Landlord (ONLY landlord)
   {
     path: "/landlord",
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute role="landlord">
         <LandlordDashboard />
       </ProtectedRoute>
     ),
   },
 
-  // Admin (can protect later)
-  { path: "/admin", element: <AdminSidebar /> },
+  // 🔐 Admin (ONLY admin)
+  {
+    path: "/admin",
+    element: (
+      <ProtectedRoute role="admin">
+        <AdminSidebar />
+      </ProtectedRoute>
+    ),
+  },
 
   // Static
   { path: "/t&c", element: <TermsAndConditions /> },
