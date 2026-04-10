@@ -264,7 +264,7 @@ const PropertyDetails = () => {
 
   const avgRating = reviews.length
     ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1)
-    : (4.2 + (property?.pgName?.length % 8) * 0.1).toFixed(1);
+    : null;
 
   if (loading) {
     return (
@@ -395,7 +395,13 @@ const PropertyDetails = () => {
               </div>
 
               <div className="detail-rating-row">
-                <div className="detail-rating-item"><div className="val" style={{ color: "var(--gold)" }}>★ {avgRating}</div><div className="lbl">Rating</div></div>
+                <div className="detail-rating-item">
+                  {avgRating
+                    ? <div className="val" style={{ color: "var(--gold)" }}>★ {avgRating}</div>
+                    : <div className="val" style={{ color: "var(--muted)", fontSize: "0.85rem" }}>—</div>
+                  }
+                  <div className="lbl">Rating</div>
+                </div>
                 <div className="detail-divider" />
                 <div className="detail-rating-item"><div className="val">{reviews.length}</div><div className="lbl">Reviews</div></div>
                 <div className="detail-divider" />
@@ -519,7 +525,8 @@ const PropertyDetails = () => {
                   ₹{selectedPrice.toLocaleString()} <span>/ month</span>
                 </div>
                 <div className="booking-card-rating">
-                  ★ {avgRating} · {reviews.length} review{reviews.length !== 1 ? "s" : ""} · {GENDER_MAP[property.gender] || property.gender}
+                  {avgRating ? <>★ {avgRating} · </> : <span style={{ color: "var(--muted)" }}>No rating yet · </span>}
+                  {reviews.length} review{reviews.length !== 1 ? "s" : ""} · {GENDER_MAP[property.gender] || property.gender}
                 </div>
 
                 {availableRoomTypes.length > 0 && (

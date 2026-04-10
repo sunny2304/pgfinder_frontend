@@ -15,6 +15,7 @@ export const BrowsePG = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [propertyImages, setPropertyImages] = useState({}); // { pgId: [url, ...] }
+  const [propertyRatings, setPropertyRatings] = useState({}); // { pgId: avgRating | null }
   const [wishlist, setWishlist] = useState(() => {
     try { return JSON.parse(localStorage.getItem("pgWishlist") || "[]"); } catch { return []; }
   });
@@ -44,11 +45,33 @@ export const BrowsePG = () => {
       else if (currentSort === "newest") data = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setProperties(data);
       fetchAllImages(data);
+      fetchAllRatings(data);
     } catch {
       toast.error("Failed to load properties");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fetch average ratings for all properties from reviews
+  const fetchAllRatings = async (props) => {
+    const results = await Promise.allSettled(
+      props.map(p =>
+        axios.get(`/properties/${p._id}/reviews`)
+          .then(r => {
+            const reviews = r.data || [];
+            if (reviews.length === 0) return { id: p._id, avg: null };
+            const sum = reviews.reduce((s, rv) => s + (rv.rating || 0), 0);
+            return { id: p._id, avg: (sum / reviews.length).toFixed(1) };
+          })
+          .catch(() => ({ id: p._id, avg: null }))
+      )
+    );
+    const map = {};
+    results.forEach(r => {
+      if (r.status === "fulfilled") map[r.value.id] = r.value.avg;
+    });
+    setPropertyRatings(map);
   };
 
   // Fetch images for all properties from DB — no fallback
@@ -98,6 +121,7 @@ export const BrowsePG = () => {
         let data = res.data.data || [];
         setProperties(data);
         fetchAllImages(data);
+        fetchAllRatings(data);
       } catch {
         toast.error("Failed to load properties");
       } finally {
@@ -360,7 +384,10 @@ export const BrowsePG = () => {
                           <div className="text-[0.72rem] text-[#8a7f74] mt-[3px]">{p.roomCategories?.length > 1 ? "Starting from · " : ""}{GENDER_MAP[p.gender] || p.gender}</div>
                         </div>
                         <div className="flex items-center gap-1 text-[#c8922a] text-[0.8rem] font-bold">
-                          ★ {(4.2 + (idx % 8) * 0.1).toFixed(1)}
+                          {propertyRatings[p._id] != null
+                            ? <>★ {propertyRatings[p._id]}</>
+                            : <span className="text-[#8a7f74] font-normal text-[0.75rem]">No rating</span>
+                          }
                         </div>
                       </div>
                     </div>
