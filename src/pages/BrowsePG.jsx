@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
-const GENDER_MAP = { male: "Boys Only", female: "Girls Only", unisex: "Co-ed" };
+const GENDER_MAP = { male: "Boys Only", female: "Girls Only" };
 const AMENITY_ICONS = {
   wifi: "", meals: "", laundry: "", ac: "",
   gym: "", parking: "", security: "",
@@ -156,11 +156,7 @@ export const BrowsePG = () => {
     }
   };
 
-  const getBadge = (p, idx) => {
-    if (idx % 3 === 0) return { bg: "#1a2744", label: "Verified" };
-    if (idx % 3 === 1) return { bg: "#2a7c6f", label: "Top Rated" };
-    return { bg: "#e05a3a", label: "New" };
-  };
+  const getBadge = () => ({ bg: "#1a2744", label: "Verified" });
 
   // No-image placeholder card section
   const NoImagePlaceholder = () => (
@@ -229,7 +225,7 @@ export const BrowsePG = () => {
           {/* Gender */}
           <div className="mb-5 pb-5 border-b border-[#e2ddd6]">
             <span className="block text-[0.68rem] font-bold uppercase tracking-[1.5px] text-[#8a7f74] mb-2.5">Gender</span>
-            {[["", "All"], ["female", "Girls Only"], ["male", "Boys Only"], ["unisex", "Co-ed"]].map(([val, label]) => (
+            {[["", "All"], ["female", "Girls Only"], ["male", "Boys Only"]].map(([val, label]) => (
               <label key={val} className="flex items-center gap-2 text-[0.85rem] text-[#3d3730] py-[5px] cursor-pointer hover:text-[#1a2744] transition-colors duration-200">
                 <input type="radio" name="gender" checked={gender === val} onChange={() => setGender(val)} className="accent-[#2a7c6f] w-3.5 h-3.5 cursor-pointer" />
                 {label}
@@ -312,7 +308,7 @@ export const BrowsePG = () => {
           {!loading && properties.length > 0 && (
             <div className="grid gap-[22px]" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))" }}>
               {properties.map((p, idx) => {
-                const badge = getBadge(p, idx);
+                const badge = getBadge();
                 const realImages = propertyImages[p._id] || [];
                 const isSaved = wishlist.includes(p._id);
 

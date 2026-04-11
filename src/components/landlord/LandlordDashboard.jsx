@@ -171,7 +171,7 @@ const EditPropertyModal = ({ property, onClose, onSave }) => {
     city: property.city || "",
     area: property.area || "",
     address: property.address || "",
-    gender: property.gender || "unisex",
+    gender: property.gender || "male",
     description: property.description || "",
     available: property.available !== false,
   });
@@ -241,7 +241,6 @@ const EditPropertyModal = ({ property, onClose, onSave }) => {
             <select className={inputCls} value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })} style={{ fontFamily: "'Outfit',sans-serif" }}>
               <option value="male">Boys Only</option>
               <option value="female">Girls Only</option>
-              <option value="unisex">Co-ed / Unisex</option>
             </select>
           </div>
           <div>
@@ -385,7 +384,7 @@ export default function LandlordDashboard() {
   const AMENITY_OPTIONS = ["wifi", "meals", "laundry", "ac", "gym", "parking", "security"];
   const ROOM_TYPES = ["single", "double", "triple"];
 
-  const defaultForm = { pgName: "", city: "", area: "", address: "", gender: "unisex", description: "", available: true };
+  const defaultForm = { pgName: "", city: "", area: "", address: "", gender: "male", description: "", available: true };
   const [form, setForm] = useState(defaultForm);
   const [selAmenities, setSelAmenities] = useState([]);
   const [roomCategories, setRoomCategories] = useState([{ type: "single", totalRooms: "", pricePerBed: "" }]);
@@ -904,7 +903,6 @@ export default function LandlordDashboard() {
                         <select className={inputCls} value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })} style={{ fontFamily: "'Outfit',sans-serif" }}>
                           <option value="male">Boys Only</option>
                           <option value="female">Girls Only</option>
-                          <option value="unisex">Co-ed / Unisex</option>
                         </select>
                       </div>
                       <div className="flex flex-col mb-4">

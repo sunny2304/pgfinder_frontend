@@ -9,6 +9,8 @@ export default function UserHome() {
   const [user, setUser] = useState(null);
   const [featuredPGs, setFeaturedPGs] = useState([]);
   const [stats, setStats] = useState(null);
+  const [featuredImages, setFeaturedImages] = useState({}); // { pgId: firstImageUrl }
+  const [featuredRatings, setFeaturedRatings] = useState({}); // { pgId: avgRating | null }
 
   // ── fetch logged-in user
   useEffect(() => {
@@ -24,9 +26,40 @@ export default function UserHome() {
   useEffect(() => {
     axios
       .get("/properties")
-      .then((res) => {
+      .then(async (res) => {
         const data = res.data.data || [];
-        setFeaturedPGs(data.slice(0, 3));
+        const featured = data.slice(0, 3);
+        setFeaturedPGs(featured);
+
+        // Fetch images for featured PGs
+        const imgResults = await Promise.allSettled(
+          featured.map((pg) =>
+            axios.get(`/propertyimage/${pg._id}`).then((r) => {
+              const d = r.data;
+              const arr = Array.isArray(d) ? d : (d?.images || d?.data || []);
+              const urls = arr.map((img) => img?.imageUrl || img?.url || img).filter((s) => typeof s === "string" && s.startsWith("http"));
+              return { id: pg._id, url: urls[0] || null };
+            }).catch(() => ({ id: pg._id, url: null }))
+          )
+        );
+        const imgMap = {};
+        imgResults.forEach((r) => { if (r.status === "fulfilled") imgMap[r.value.id] = r.value.url; });
+        setFeaturedImages(imgMap);
+
+        // Fetch ratings for featured PGs
+        const ratingResults = await Promise.allSettled(
+          featured.map((pg) =>
+            axios.get(`/properties/${pg._id}/reviews`).then((r) => {
+              const reviews = r.data || [];
+              if (reviews.length === 0) return { id: pg._id, avg: null, count: 0 };
+              const sum = reviews.reduce((s, rv) => s + (rv.rating || 0), 0);
+              return { id: pg._id, avg: (sum / reviews.length).toFixed(1), count: reviews.length };
+            }).catch(() => ({ id: pg._id, avg: null, count: 0 }))
+          )
+        );
+        const ratingMap = {};
+        ratingResults.forEach((r) => { if (r.status === "fulfilled") ratingMap[r.value.id] = { avg: r.value.avg, count: r.value.count }; });
+        setFeaturedRatings(ratingMap);
 
         // Derive real stats from the database
         const totalListings = data.length;
@@ -118,12 +151,8 @@ export default function UserHome() {
       { num: "...", label: "Verified Listings" },
     ];
 
-  // ── badge helper (unchanged)
-  const badgeFor = (pg, index) => {
-    if (index === 0) return { label: "Verified", color: "#1a2744" };
-    if (index === 1) return { label: "Top Rated", color: "#2a7c6f" };
-    return { label: "New", color: "#e05a3a" };
-  };
+  // ── badge helper — always Verified
+  const badgeFor = () => ({ label: "Verified", color: "#1a2744" });
 
   // ── static fallback cards (matching screenshots exactly)
   const staticCards = [
@@ -145,8 +174,8 @@ export default function UserHome() {
       price: "₹9,200",
       rating: "4.9",
       reviews: 78,
-      badge: "Top Rated",
-      badgeColor: "#2a7c6f",
+      badge: "Verified",
+      badgeColor: "#1a2744",
       img: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=75",
     },
     {
@@ -156,8 +185,8 @@ export default function UserHome() {
       price: "₹11,000",
       rating: "4.6",
       reviews: 19,
-      badge: "New",
-      badgeColor: "#e05a3a",
+      badge: "Verified",
+      badgeColor: "#1a2744",
       img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&q=75",
     },
   ];
@@ -380,8 +409,9 @@ export default function UserHome() {
           <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
             {featuredPGs.length > 0
               ? featuredPGs.map((pg, index) => {
-                const badge = badgeFor(pg, index);
-                const reviewCount = 10 + (pg.pgName?.length % 70);
+                const badge = badgeFor();
+                const ratingInfo = featuredRatings[pg._id];
+                const imgUrl = featuredImages[pg._id];
                 return (
                   <div
                     key={pg._id}
@@ -390,9 +420,9 @@ export default function UserHome() {
                   >
                     {/* Image */}
                     <div className="card-img-wrap h-[210px] relative overflow-hidden bg-[#e8f5f3]">
-                      {pg.image ? (
+                      {imgUrl ? (
                         <img
-                          src={pg.image}
+                          src={imgUrl}
                           alt={pg.pgName}
                           className="w-full h-full object-cover"
                           onError={(e) => { e.target.style.display = "none"; }}
@@ -449,9 +479,15 @@ export default function UserHome() {
                           <span className="text-[#8a7f74] text-[0.78rem] font-normal ml-1">/month</span>
                         </div>
                         <div className="flex items-center gap-1 text-[#8a7f74] text-[0.82rem]">
-                          <span className="text-[#c8922a]">★</span>
-                          <span className="font-semibold text-[#1a2744]">{pg.rating || "4.7"}</span>
-                          <span className="text-[#b5ada6]">({reviewCount})</span>
+                          {ratingInfo?.avg != null ? (
+                            <>
+                              <span className="text-[#c8922a]">★</span>
+                              <span className="font-semibold text-[#1a2744]">{ratingInfo.avg}</span>
+                              <span className="text-[#b5ada6]">({ratingInfo.count})</span>
+                            </>
+                          ) : (
+                            <span className="text-[#b5ada6] text-[0.75rem]">No rating</span>
+                          )}
                         </div>
                       </div>
                     </div>
