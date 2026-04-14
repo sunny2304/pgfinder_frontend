@@ -27,6 +27,8 @@ import TermsAndConditions from "../pages/TermsAndConditions";
 // Protected Route
 import ProtectedRoute from "../hooks/ProtectedRoutes";
 
+import ForgotPassword from "../components/ForgotPassword";
+import ResetPassword from "../components/ResetPassword";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -78,7 +80,9 @@ const router = createBrowserRouter([
   // Auth
   { path: "/login", element: <Login /> },
   { path: "/signup", element: <Signup /> },
-
+  { path: "/forgot-password", element: <ForgotPassword /> },
+  { path: "/resetpassword/:token", element: <ResetPassword /> },
+  
   // 🔐 Landlord (ONLY landlord)
   {
     path: "/landlord",
@@ -98,7 +102,9 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-
+  // inside createBrowserRouter([...])
+  { path: "/forgot-password", element: <ForgotPassword /> },
+  { path: "/resetpassword/:token", element: <ResetPassword /> },
   // Static
   { path: "/t&c", element: <TermsAndConditions /> },
   { path: "/privacypolicy", element: <PrivacyPolicy /> },
