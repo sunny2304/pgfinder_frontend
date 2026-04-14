@@ -376,7 +376,7 @@ export default function LandlordDashboard() {
   const [disputeSubmitting, setDisputeSubmitting] = useState(false);
   const [editPropModal, setEditPropModal] = useState(null);
   const [detailBooking, setDetailBooking] = useState(null);
-  const [propViewModal, setPropViewModal] = useState(null); // ← NEW
+  const [propViewModal, setPropViewModal] = useState(null);
 
   const [disputeFilter, setDisputeFilter] = useState("all");
 
@@ -415,8 +415,16 @@ export default function LandlordDashboard() {
     .filter(b => myPropIds.includes(b.pgId?._id || b.pgId))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const pendingBookings = myBookings.filter(b => b.bookingStatus === "pending");
-  const myRevenue = payments.filter(p => myPropIds.includes(p.bookingId?.pgId)).reduce((s, p) => s + (p.landlordAmount || p.amount || 0), 0);
   const openDisputesCount = myDisputes.filter(d => d.status === "open").length;
+
+  // ── Total Revenue: sum of all successful payments for this landlord's properties ──
+  const myRevenue = payments
+    .filter(p => {
+      const pgId = p.bookingId?.pgId?._id || p.bookingId?.pgId;
+      return myPropIds.includes(pgId) || myPropIds.includes(String(pgId));
+    })
+    .filter(p => p.paymentStatus === "success")
+    .reduce((s, p) => s + (p.landlordAmount || p.amount || 0), 0);
 
   const updateStatus = async (bookingId, status) => {
     try { await axios.patch(`/bookings/${bookingId}/status`, { status }); toast.success(`Booking ${status}!`); loadBookings(); loadProperties(); } catch { toast.error("Action failed"); }
@@ -553,7 +561,6 @@ export default function LandlordDashboard() {
     { id: "add", label: "Add Property", section: "MANAGE", icon: <><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></> },
     { id: "disputes", label: "Disputes", section: null, badge: openDisputesCount, icon: <><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></> },
     { id: "reviews", label: "Reviews", section: null, badge: 0, icon: <><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></> },
-
     { id: "earnings", label: "Earnings", section: "FINANCE", icon: <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></> },
   ];
 
@@ -569,9 +576,6 @@ export default function LandlordDashboard() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');
         * { box-sizing:border-box; }
-        .chart-bar { flex:1; background:rgba(42,124,111,0.18); border-radius:5px 5px 0 0; transition:all 0.25s ease; }
-        .chart-bar:hover { background:rgba(42,124,111,0.45); }
-        .chart-bar.highlight { background:rgba(26,39,68,0.5); }
         .ld-sl-active::before { content:''; position:absolute; left:0; top:20%; bottom:20%; width:3px; background:#2a7c6f; border-radius:0 3px 3px 0; }
         @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         @media(max-width:900px){
@@ -622,12 +626,15 @@ export default function LandlordDashboard() {
                 </div>
                 <button className="bg-[#1a2744] text-white border-none py-2 px-4 rounded-[9px] text-[0.88rem] font-bold cursor-pointer hover:bg-[#243356] transition-all duration-300" onClick={() => setTab("add")} style={{ fontFamily: "'Outfit',sans-serif" }}>+ Add Property</button>
               </div>
+
+              {/* ── Stat Cards ── */}
               <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-[18px] mb-7">
                 {[
                   { label: "Total Properties", val: properties.length, sub: `${properties.filter(p => p.available).length} active · ${properties.filter(p => !p.available).length} paused`, iconCls: "bg-[#e8f5f3] text-[#2a7c6f]", icon: <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /> },
                   { label: "Active Tenants", val: myBookings.filter(b => b.bookingStatus === "confirmed").length, sub: "Confirmed bookings", subUp: true, iconCls: "bg-[rgba(26,39,68,0.07)] text-[#1a2744]", icon: <><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /></> },
                   { label: "Pending Requests", val: pendingBookings.length, sub: "Awaiting review", iconCls: "bg-[#eef2fb] text-[#3b6bcc]", icon: <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /> },
-                  { label: "Monthly Revenue", val: `₹${myRevenue.toLocaleString()}`, sub: "From payments", subUp: true, iconCls: "bg-[#fdf6e8] text-[#c8922a]", icon: <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></>, numSm: true },
+                  // ── "Monthly Revenue" renamed to "Total Revenue" and value is dynamic from real payments ──
+                  { label: "Total Revenue", val: `₹${myRevenue.toLocaleString()}`, sub: "From all payments", subUp: true, iconCls: "bg-[#fdf6e8] text-[#c8922a]", icon: <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></>, numSm: true },
                 ].map(s => (
                   <div key={s.label} className="bg-white border border-[#e2ddd6] rounded-[14px] p-6 transition-all duration-300 shadow-[0_2px_16px_rgba(26,39,68,0.08)] hover:shadow-[0_8px_40px_rgba(26,39,68,0.13)] hover:-translate-y-0.5">
                     <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center mb-3.5 ${s.iconCls}`}>
@@ -640,21 +647,8 @@ export default function LandlordDashboard() {
                 ))}
               </div>
 
-              {/* Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-                <div className="bg-white border border-[#e2ddd6] rounded-[14px] shadow-[0_2px_16px_rgba(26,39,68,0.08)] overflow-hidden">
-                  <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2ddd6]">
-                    <h3 className="text-[0.95rem] font-bold text-[#1a2744]">Monthly Earnings</h3>
-                    <span className="text-[#8a7f74] text-[0.8rem]">Last 8 months</span>
-                  </div>
-                  <div className="p-6">
-                    <div className="bg-[#faf9f7] rounded-[10px] h-[190px] flex items-end gap-2 px-4 pt-4 overflow-hidden">
-                      {[55, 70, 60, 80, 65, 90, 75, 100].map((h, i) => (
-                        <div key={i} className={`chart-bar${i === 7 ? " highlight" : ""}`} style={{ height: `${h}%` }} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
+              {/* ── Room Availability (full width — chart removed) ── */}
+              <div className="mb-6">
                 <div className="bg-white border border-[#e2ddd6] rounded-[14px] shadow-[0_2px_16px_rgba(26,39,68,0.08)] overflow-hidden">
                   <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2ddd6]">
                     <h3 className="text-[0.95rem] font-bold text-[#1a2744]">Room Availability</h3>
@@ -680,7 +674,7 @@ export default function LandlordDashboard() {
                 </div>
               </div>
 
-              {/* Recent bookings */}
+              {/* ── Recent Booking Requests ── */}
               <div className="bg-white border border-[#e2ddd6] rounded-[14px] shadow-[0_2px_16px_rgba(26,39,68,0.08)] overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2ddd6]">
                   <h3 className="text-[0.95rem] font-bold text-[#1a2744]">Recent Booking Requests</h3>
@@ -751,7 +745,6 @@ export default function LandlordDashboard() {
                               {p.available
                                 ? <BtnSm cls="bg-[#fdf0ec] text-[#e05a3a] hover:bg-orange-100" onClick={() => toggleAvailable(p)}>Pause</BtnSm>
                                 : <BtnSm cls="bg-[#e8f5f3] text-[#2a7c6f] hover:bg-[rgba(42,124,111,0.18)]" onClick={() => toggleAvailable(p)}>Activate</BtnSm>}
-                              {/* ── UPDATED VIEW BUTTON ── */}
                               <BtnSm cls="bg-[#eef2fb] text-[#3b6bcc] hover:bg-blue-100" onClick={() => setPropViewModal(p)}>View</BtnSm>
                               <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => setEditPropModal(p)}>Edit</BtnSm>
                               <BtnSm cls="bg-[#fdf0ec] text-[#e05a3a] hover:bg-orange-100" onClick={() => deleteProperty(p._id)}>Delete</BtnSm>
@@ -1107,8 +1100,6 @@ export default function LandlordDashboard() {
               </div>
             );
           })()}
-
-          
 
           {/* ══ EARNINGS ══ */}
           {tab === "earnings" && <EarningsTab payments={payments} myBookings={myBookings} myPropIds={myPropIds} />}
