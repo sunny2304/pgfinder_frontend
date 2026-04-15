@@ -73,7 +73,7 @@ const CheckoutPage = () => {
 
   const fmt = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
-  // ── STEP 1: Create booking in DB, then go to payment step
+  // ── STEP 1: Create booking in DB with "pending" status, then go to payment step
   const handleConfirmBooking = async () => {
     try {
       const res = await axios.post(`/users/${userId}/properties/${id}/bookings`, {
@@ -110,7 +110,7 @@ const CheckoutPage = () => {
 
       // 3. Open Razorpay checkout
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // add this in your .env as VITE_RAZORPAY_KEY_ID
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: "INR",
         name: "PG Finder",
@@ -119,7 +119,7 @@ const CheckoutPage = () => {
         order_id: order.id,
 
         handler: async function (response) {
-          // 4. Verify payment on backend → saves Payment record + confirms booking
+          // 4. Verify payment on backend → saves Payment record + confirms/cancels booking
           try {
             const verifyRes = await axios.post("/payment/verify-payment", {
               razorpay_order_id: response.razorpay_order_id,
@@ -131,15 +131,19 @@ const CheckoutPage = () => {
             });
 
             if (verifyRes.data.success) {
-              const code = "PGF-" + Date.now().toString().slice(-8).toUpperCase();
+              // ✅ Payment success — booking confirmed by backend
               setRefCode(bookingId);
               setStep(3);
               toast.success("Payment successful! 🎉");
             } else {
-              toast.error("Payment verification failed. Contact support.");
+              // ❌ Payment verification failed — cancel the booking
+              await axios.patch(`/bookings/${bookingId}/status`, { status: "cancelled" });
+              toast.error("Payment verification failed. Booking has been cancelled.");
             }
           } catch {
-            toast.error("Payment verification failed. Contact support.");
+            // ❌ Error during verification — cancel the booking
+            await axios.patch(`/bookings/${bookingId}/status`, { status: "cancelled" });
+            toast.error("Payment failed. Your booking has been cancelled.");
           } finally {
             setPaying(false);
           }
@@ -154,9 +158,13 @@ const CheckoutPage = () => {
         theme: { color: "#2a7c6f" },
 
         modal: {
-          ondismiss: function () {
+          ondismiss: async function () {
             setPaying(false);
-            toast.info("Payment cancelled.");
+            // ❌ User closed Razorpay without paying — cancel the booking
+            if (bookingId) {
+              await axios.patch(`/bookings/${bookingId}/status`, { status: "cancelled" });
+            }
+            toast.info("Payment cancelled. Booking has been cancelled.");
           },
         },
       };
@@ -278,15 +286,6 @@ const CheckoutPage = () => {
                         <span className="font-bold text-[#1a2744]">Total Amount</span>
                         <span className="font-bold text-[#2a7c6f] text-[1.1rem]">₹{totalRent.toLocaleString()}</span>
                       </div>
-                    </div>
-
-                    {/* Razorpay supported methods info */}
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      {["UPI", "Credit Card", "Debit Card", "Net Banking", "Wallets"].map((method) => (
-                        <span key={method} className="text-[0.75rem] font-semibold bg-[#f0ede8] text-[#3d3730] px-3 py-1.5 rounded-[8px]">
-                          {method}
-                        </span>
-                      ))}
                     </div>
 
                     {/* Pay button */}
