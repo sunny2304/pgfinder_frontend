@@ -410,16 +410,7 @@ export const AdminSidebar = () => {
     navigate("/");
   };
 
-  const exportCSV = (data, filename) => {
-    if (!data.length) { toast.error("No data to export"); return; }
-    const keys = Object.keys(data[0]).filter(k => typeof data[0][k] !== "object");
-    const rows = [keys.join(","), ...data.map(r => keys.map(k => `"${r[k] ?? ""}"`).join(","))];
-    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-  };
+
 
   // ─────────────────────────────────────────────────────────────────────────
   // COMPUTED
@@ -527,11 +518,6 @@ export const AdminSidebar = () => {
                   <h1 className="text-[1.8rem] font-bold text-[#1a2744]" style={{ fontFamily: "'Fraunces',serif" }}>Admin Dashboard</h1>
                   <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">Platform-wide overview and quick actions.</p>
                 </div>
-                <button
-                  className="bg-[#1a2744] text-white border-none py-2 px-4 rounded-[9px] text-[0.88rem] font-bold cursor-pointer hover:bg-[#243356] transition-all duration-300"
-                  style={{ fontFamily: "'Outfit',sans-serif" }}
-                  onClick={() => exportCSV(bookings.map(b => ({ id: b._id, tenant: b.tenantId?.firstName, property: b.pgId?.pgName, status: b.bookingStatus, checkIn: b.checkInDate })), "bookings_report.csv")}
-                >Export Report</button>
               </div>
 
               <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-[18px] mb-7">
@@ -637,7 +623,7 @@ export const AdminSidebar = () => {
                   <BtnSm cls="bg-[#1a2744] text-white hover:bg-[#243356]" onClick={() => { setTab("bookings"); }}>Review Pending Bookings ({pendingBookings})</BtnSm>
                   <BtnSm cls="bg-[#fdf0ec] text-[#e05a3a] hover:bg-orange-100" onClick={() => setTab("disputes")}>Open Disputes ({openDisputes})</BtnSm>
                   <BtnSm cls="bg-[#e8f5f3] text-[#2a7c6f] hover:bg-[rgba(42,124,111,0.18)]" onClick={() => setAddUserModal(true)}>+ Add User</BtnSm>
-                  <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(payments.map(p => ({ id: p._id, amount: p.amount, status: p.paymentStatus, method: p.paymentMethod, date: p.createdAt })), "payments.csv")}>Export Payments CSV</BtnSm>
+
                 </div>
               </div>
             </div>
@@ -654,7 +640,6 @@ export const AdminSidebar = () => {
                 <div className="flex gap-2.5 flex-wrap">
                   <input className="bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] py-2 px-3.5 text-[0.85rem] text-[#1a1a1a] outline-none transition-all duration-300 focus:border-[#2a7c6f]" placeholder="Search users…" value={userSearch} onChange={e => { setUserSearch(e.target.value); setUserPage(1); }} style={{ fontFamily: "'Outfit',sans-serif" }} />
                   <BtnSm cls="bg-[#1a2744] text-white hover:bg-[#243356]" onClick={() => setAddUserModal(true)}>+ Add User</BtnSm>
-                  <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(users.map(u => ({ id: u._id, name: `${u.firstName} ${u.lastName}`, email: u.email, role: u.role, status: u.status })), "users.csv")}>Export CSV</BtnSm>
                 </div>
               </div>
 
@@ -718,7 +703,7 @@ export const AdminSidebar = () => {
                 </div>
                 <div className="flex gap-2.5 flex-wrap">
                   <input className="bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] py-2 px-3.5 text-[0.85rem] text-[#1a1a1a] outline-none transition-all duration-300 focus:border-[#2a7c6f]" placeholder="Search properties…" value={propSearch} onChange={e => { setPropSearch(e.target.value); setPropPage(1); }} style={{ fontFamily: "'Outfit',sans-serif" }} />
-                  <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(properties.map(p => ({ id: p._id, name: p.pgName, city: p.city, rent: p.rent, available: p.available })), "properties.csv")}>Export CSV</BtnSm>
+
                 </div>
               </div>
 
@@ -802,7 +787,7 @@ export const AdminSidebar = () => {
                 </div>
                 <div className="flex gap-2.5 flex-wrap">
                   <input className="bg-[#faf9f7] border border-[#e2ddd6] rounded-[9px] py-2 px-3.5 text-[0.85rem] text-[#1a1a1a] outline-none transition-all duration-300 focus:border-[#2a7c6f]" placeholder="Search bookings…" value={bookingSearch} onChange={e => { setBookingSearch(e.target.value); setBookingPage(1); }} style={{ fontFamily: "'Outfit',sans-serif" }} />
-                  <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(bookings.map(b => ({ id: b._id, tenant: b.tenantId?.firstName, property: b.pgId?.pgName, status: b.bookingStatus, checkIn: b.checkInDate, checkOut: b.checkOutDate })), "bookings.csv")}>Export CSV</BtnSm>
+
                 </div>
               </div>
 
@@ -872,20 +857,6 @@ export const AdminSidebar = () => {
                 <div>
                   <h1 className="text-[1.8rem] font-bold text-[#1a2744]" style={{ fontFamily: "'Fraunces',serif" }}>Disputes</h1>
                   <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">Review and resolve platform disputes.</p>
-                </div>
-                <div className="flex gap-2.5">
-                  <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(disputes.map(d => ({
-                    id: d._id,
-                    status: d.status,
-                    raised_by: `${d.raisedBy?.firstName || ""} ${d.raisedBy?.lastName || ""}`.trim() || "—",
-                    raised_by_role: d.raisedBy?.role || "—",
-                    raised_against: `${d.raisedAgainst?.firstName || ""} ${d.raisedAgainst?.lastName || ""}`.trim() || "—",
-                    raised_against_role: d.raisedAgainst?.role || "—",
-                    property: d.property?.pgName || "—",
-                    city: d.property?.city || "—",
-                    description: d.description,
-                    date: d.createdAt,
-                  })), "disputes.csv")}>Export CSV</BtnSm>
                 </div>
               </div>
 
@@ -1023,7 +994,6 @@ export const AdminSidebar = () => {
                   <h1 className="text-[1.8rem] font-bold text-[#1a2744]" style={{ fontFamily: "'Fraunces',serif" }}>Payments & Revenue</h1>
                   <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">Track all transactions and platform fee collection.</p>
                 </div>
-                <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(payments.map(p => ({ id: p._id, amount: p.amount, fee: p.platformFee, landlord: p.landlordAmount, method: p.paymentMethod, status: p.paymentStatus, date: p.createdAt })), "payments.csv")}>Export CSV</BtnSm>
               </div>
 
               <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-[18px] mb-7">
@@ -1083,7 +1053,6 @@ export const AdminSidebar = () => {
                   <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">System-wide audit trail of all actions.</p>
                 </div>
                 <div className="flex gap-2.5">
-                  <BtnSm cls="bg-[#f0ede8] text-[#3d3730] hover:bg-[#e2ddd6]" onClick={() => exportCSV(logs.map(l => ({ id: l._id, user: l.userId?.firstName || "System", activity: l.activity, description: l.description, date: l.createdAt })), "activity_logs.csv")}>Export CSV</BtnSm>
                   <BtnSm cls="bg-[#1a2744] text-white hover:bg-[#243356]" onClick={async () => {
                     await axios.post("/logs", { activity: "ADMIN_ACTION", description: "Admin manually triggered a log entry." });
                     const res = await axios.get("/logs");

@@ -47,23 +47,7 @@ export const EarningsTab = ({ payments, myBookings, myPropIds = [] }) => {
   const thCls = "bg-[#faf9f7] text-left text-[0.7rem] font-bold uppercase tracking-[1px] text-[#8a7f74] py-[11px] px-[18px]";
   const tdCls = "py-3.5 px-[18px] text-[0.875rem] text-[#3d3730] border-t border-[#e2ddd6]";
 
-  const exportCSV = () => {
-    if (!myPayments.length) return;
-    const rows = [
-      ["Date", "Tenant", "Property", "Gross Amount", "Platform Fee (5%)", "Your Earnings", "Status"],
-      ...[...myPayments].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(p => {
-        const fee = p.platformFee || Math.round((p.amount || 0) * 5 / 100);
-        const net = p.landlordAmount || ((p.amount || 0) - fee);
-        const tenant = (p.userId?.firstName || p.bookingId?.tenantId?.firstName || "—");
-        return [fmt(p.createdAt), tenant, p.bookingId?.pgId?.pgName || "—", p.amount || 0, fee, net, p.paymentStatus];
-      }),
-    ];
-    const csv = rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = "my_earnings.csv";
-    a.click();
-  };
+
 
   const statCards = [
     { label: "This Month",    val: `₹${thisMonthEarnings.toLocaleString()}`, sub: "Your earnings this month",   iconCls: "bg-[#fdf6e8] text-[#c8922a]",           icon: <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></> },
@@ -77,15 +61,11 @@ export const EarningsTab = ({ payments, myBookings, myPropIds = [] }) => {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');`}</style>
       <div style={{ fontFamily: "'Outfit',sans-serif" }}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+        <div className="mb-8">
           <div>
             <h1 className="text-[1.8rem] font-bold text-[#1a2744]" style={{ fontFamily: "'Fraunces',serif" }}>Earnings</h1>
             <p className="text-[#8a7f74] text-[0.9rem] mt-[3px]">Track your rental income across all your properties.</p>
           </div>
-          <button onClick={exportCSV} className="bg-transparent border border-[#e2ddd6] text-[#1a2744] py-1.5 px-4 rounded-[9px] text-[0.85rem] font-semibold cursor-pointer hover:border-[#1a2744] hover:bg-[#f0ede8] transition-all duration-300" style={{ fontFamily: "'Outfit',sans-serif" }}>
-            Export CSV
-          </button>
         </div>
 
         {/* Info banner */}
