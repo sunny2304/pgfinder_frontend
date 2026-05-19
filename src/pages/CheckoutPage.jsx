@@ -348,7 +348,6 @@ const CheckoutPage = () => {
                 <h4 className="font-bold text-[1rem] text-[#1a2744] mb-4" style={{ fontFamily: "'Fraunces',serif" }}>What happens next?</h4>
                 {[
                   "Landlord contacts you within 24 hours to schedule a move-in visit.",
-                  "Submit your ID verification documents via the portal.",
                   "Move in on your selected date. Welcome home!",
                 ].map((s, i) => (
                   <div key={i} className="flex gap-3 text-[0.87rem] text-[#3d3730] mb-3 leading-[1.6]">
