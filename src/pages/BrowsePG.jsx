@@ -142,6 +142,12 @@ export const BrowsePG = () => {
 
   const toggleWishlist = (e, propId) => {
     e.stopPropagation();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.info("Please log in to save PGs to your wishlist");
+      navigate("/login");
+      return;
+    }
     const saved = wishlist.includes(propId);
     const next = saved ? wishlist.filter((id) => id !== propId) : [...wishlist, propId];
     setWishlist(next);

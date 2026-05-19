@@ -211,6 +211,12 @@ const PropertyDetails = () => {
   }, [id]);
 
   const toggleWishlist = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.info("Please log in to save PGs to your wishlist");
+      navigate("/login");
+      return;
+    }
     const isSaved = wishlist.includes(id);
     const next = isSaved ? wishlist.filter(x => x !== id) : [...wishlist, id];
     setWishlist(next);
@@ -510,7 +516,7 @@ const PropertyDetails = () => {
 
               <div className="detail-section-title">House Rules</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, fontFamily: "'Outfit',sans-serif" }}>
-                {["No late night entry after 11 PM", "No smoking on premises", "Guests allowed till 9 PM", "Rent due by 5th of each month", "ID proof required at check-in"].map((rule, i) => (
+                {["No late night entry after 11 PM", "No smoking on premises", "Guests allowed till 9 PM", "ID proof required at check-in"].map((rule, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.87rem", color: "var(--text2)", padding: "8px 12px", background: "var(--surface)", borderRadius: 8, border: "1px solid var(--border)" }}>
                     <span style={{ color: "var(--teal)", fontSize: "1rem" }}>•</span> {rule}
                   </div>
