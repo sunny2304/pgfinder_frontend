@@ -7,9 +7,9 @@ import axios from "axios";
 export default function Signup() {
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm]   = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [selectedRole, setSelectedRole] = useState("user");
-  const [loading, setLoading]           = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const passwordValue = watch("password", "");
@@ -17,9 +17,9 @@ export default function Signup() {
   // ── password strength helper
   const getStrength = (val) => {
     if (!val) return { score: 0, label: "Enter a password", color: "#e2ddd6" };
-    if (val.length < 6)  return { score: 1, label: "Weak",    color: "#e05a3a" };
-    if (val.length < 10) return { score: 2, label: "Fair",    color: "#c8922a" };
-    return                      { score: 3, label: "Strong ✓", color: "#2a7c6f" };
+    if (val.length < 6) return { score: 1, label: "Weak", color: "#e05a3a" };
+    if (val.length < 10) return { score: 2, label: "Fair", color: "#c8922a" };
+    return { score: 3, label: "Strong ✓", color: "#2a7c6f" };
   };
   const strength = getStrength(passwordValue);
 
@@ -29,11 +29,11 @@ export default function Signup() {
     try {
       const payload = {
         firstName: data.firstName,
-        lastName:  data.lastName,
-        email:     data.email,
-        phone:     data.phone,
-        password:  data.password,
-        role:      selectedRole,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+        role: selectedRole,
       };
 
       const res = await axios.post("/register", payload);
@@ -83,6 +83,7 @@ export default function Signup() {
         />
 
         {/* content */}
+        {/* content */}
         <div className="relative z-10 text-white">
           {/* Logo */}
           <div
@@ -103,33 +104,46 @@ export default function Signup() {
             awaits.
           </h2>
 
-          <p className="mb-10 text-base leading-relaxed" style={{ color: "rgba(255,255,255,0.65)", maxWidth: 380 }}>
-            Join 48,000+ happy tenants who found their ideal PG through PGFinder.
-            Quick, safe, and completely reliable.
+          <p
+            className="mb-10 text-base leading-relaxed"
+            style={{
+              color: "rgba(255,255,255,0.65)",
+              maxWidth: 380,
+            }}
+          >
+            Discover comfortable PGs, compare amenities, and connect with
+            property owners — all in one simple and modern platform.
           </p>
 
-          {/* Stats strip */}
+          {/* Features strip */}
           <div className="flex gap-8 mb-10">
             {[
-              { num: "12,400+", lbl: "Properties" },
-              { num: "98%",     lbl: "Verified" },
-              { num: "320+",    lbl: "Cities" },
+              { num: "24/7", lbl: "Support" },
+              { num: "Safe", lbl: "Platform" },
+              { num: "Easy", lbl: "Booking" },
             ].map((s) => (
               <div key={s.lbl}>
                 <div
                   className="text-2xl font-black"
-                  style={{ fontFamily: "'Fraunces', serif", color: "#7dd3c8" }}
+                  style={{
+                    fontFamily: "'Fraunces', serif",
+                    color: "#7dd3c8",
+                  }}
                 >
                   {s.num}
                 </div>
-                <div className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.55)" }}>
+
+                <div
+                  className="text-xs mt-1"
+                  style={{ color: "rgba(255,255,255,0.55)" }}
+                >
                   {s.lbl}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Testimonial card */}
+          {/* Info card */}
           <div
             className="rounded-2xl p-5"
             style={{
@@ -138,21 +152,32 @@ export default function Signup() {
               backdropFilter: "blur(10px)",
             }}
           >
-            <p className="text-sm italic leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>
-              "Listed my property on PGFinder and got my first tenant within a
-              week. Amazing platform for landlords!"
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: "rgba(255,255,255,0.82)" }}
+            >
+              Browse verified listings, explore amenities, and find a PG
+              that fits your lifestyle with a smooth and hassle-free experience.
             </p>
+
             <div className="flex items-center gap-3 mt-4">
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
                 style={{ background: "#c8922a", color: "#fff" }}
               >
-                R
+                ✦
               </div>
+
               <div>
-                <div className="text-sm font-semibold">Ramesh Kumar</div>
-                <div className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
-                  Landlord · 4 Properties
+                <div className="text-sm font-semibold">
+                  Smart PG Discovery
+                </div>
+
+                <div
+                  className="text-xs"
+                  style={{ color: "rgba(255,255,255,0.5)" }}
+                >
+                  Modern • Simple • Reliable
                 </div>
               </div>
             </div>
@@ -197,8 +222,8 @@ export default function Signup() {
               label: "Tenant",
               icon: (
                 <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
                 </svg>
               ),
             },
@@ -207,8 +232,8 @@ export default function Signup() {
               label: "Landlord",
               icon: (
                 <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                  <polyline points="9,22 9,12 15,12 15,22"/>
+                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                  <polyline points="9,22 9,12 15,12 15,22" />
                 </svg>
               ),
             },
@@ -344,14 +369,14 @@ export default function Signup() {
               >
                 {showPassword ? (
                   <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path d="M3 3l18 18"/>
-                    <path d="M10.58 10.58A2 2 0 0013.42 13.42"/>
-                    <path d="M9.88 5.09A9.77 9.77 0 0112 5c5 0 9 7 9 7a16.5 16.5 0 01-3.07 3.94M6.1 6.1A16.5 16.5 0 003 12s4 7 9 7a9.77 9.77 0 004.12-.91"/>
+                    <path d="M3 3l18 18" />
+                    <path d="M10.58 10.58A2 2 0 0013.42 13.42" />
+                    <path d="M9.88 5.09A9.77 9.77 0 0112 5c5 0 9 7 9 7a16.5 16.5 0 01-3.07 3.94M6.1 6.1A16.5 16.5 0 003 12s4 7 9 7a9.77 9.77 0 004.12-.91" />
                   </svg>
                 ) : (
                   <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path d="M1.5 12s4.5-7 10.5-7 10.5 7 10.5 7-4.5 7-10.5 7S1.5 12 1.5 12z"/>
-                    <circle cx="12" cy="12" r="2.5"/>
+                    <path d="M1.5 12s4.5-7 10.5-7 10.5 7 10.5 7-4.5 7-10.5 7S1.5 12 1.5 12z" />
+                    <circle cx="12" cy="12" r="2.5" />
                   </svg>
                 )}
               </span>
@@ -402,14 +427,14 @@ export default function Signup() {
               >
                 {showConfirm ? (
                   <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path d="M3 3l18 18"/>
-                    <path d="M10.58 10.58A2 2 0 0013.42 13.42"/>
-                    <path d="M9.88 5.09A9.77 9.77 0 0112 5c5 0 9 7 9 7a16.5 16.5 0 01-3.07 3.94M6.1 6.1A16.5 16.5 0 003 12s4 7 9 7a9.77 9.77 0 004.12-.91"/>
+                    <path d="M3 3l18 18" />
+                    <path d="M10.58 10.58A2 2 0 0013.42 13.42" />
+                    <path d="M9.88 5.09A9.77 9.77 0 0112 5c5 0 9 7 9 7a16.5 16.5 0 01-3.07 3.94M6.1 6.1A16.5 16.5 0 003 12s4 7 9 7a9.77 9.77 0 004.12-.91" />
                   </svg>
                 ) : (
                   <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path d="M1.5 12s4.5-7 10.5-7 10.5 7 10.5 7-4.5 7-10.5 7S1.5 12 1.5 12z"/>
-                    <circle cx="12" cy="12" r="2.5"/>
+                    <path d="M1.5 12s4.5-7 10.5-7 10.5 7 10.5 7-4.5 7-10.5 7S1.5 12 1.5 12z" />
+                    <circle cx="12" cy="12" r="2.5" />
                   </svg>
                 )}
               </span>

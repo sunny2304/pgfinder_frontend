@@ -31,8 +31,8 @@ export default function Login() {
 
         }
         else if (role === "landlord" || role === "LANDLORD") {
-          navigate("/landlord"); 
-        }  
+          navigate("/landlord");
+        }
         else {
           toast.error("Invalid role");
           navigate("/");
@@ -254,22 +254,37 @@ export default function Login() {
         {/* ── LEFT PANEL ── */}
         <div className="auth-left">
           <div className="auth-left-content">
-            <span className="auth-logo">PG<em>Finder</em></span>
+            <span className="auth-logo">
+              PG<em>Finder</em>
+            </span>
 
             <h2>
               Welcome <br />
               <i>back.</i>
             </h2>
 
-            <p>Thousands of verified PGs waiting for you. Log in and continue your search.</p>
+            <p>
+              Continue exploring comfortable stays, verified listings,
+              and a smarter way to find your next PG.
+            </p>
 
             <div className="auth-testimonial">
-              <p>"Found my perfect PG within 2 days. The booking process was seamless!"</p>
+              <p>
+                Browse properties, compare amenities, and manage your
+                bookings — all in one seamless experience.
+              </p>
+
               <div className="auth-testimonial-author">
-                <div className="auth-testimonial-ava">P</div>
+                <div className="auth-testimonial-ava">✦</div>
+
                 <div>
-                  <div className="auth-testimonial-name">Priya Sharma</div>
-                  <div className="auth-testimonial-role">Tenant · Bengaluru</div>
+                  <div className="auth-testimonial-name">
+                    Smart PG Experience
+                  </div>
+
+                  <div className="auth-testimonial-role">
+                    Simple · Secure · Reliable
+                  </div>
                 </div>
               </div>
             </div>

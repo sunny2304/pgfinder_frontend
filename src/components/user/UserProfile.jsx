@@ -341,11 +341,12 @@ export default function UserProfile() {
                   <div>
                     <label className="block text-[0.7rem] font-bold uppercase tracking-[1.2px] text-[#8a7f74] mb-2">Phone</label>
                     <input
-                      value={user.phone || ""}
+                      value={user.phone || "Not provided"}
                       readOnly
                       className="w-full bg-[#f0ede8] border border-[#e2ddd6] rounded-[9px] text-[#8a7f74] text-[0.9rem] py-3 px-3.5 outline-none cursor-not-allowed"
                       style={{ fontFamily: "'Outfit', sans-serif" }}
                     />
+                    <p className="text-[0.72rem] text-[#8a7f74] mt-1">Phone cannot be changed</p>
                   </div>
                 </div>
                 <button
