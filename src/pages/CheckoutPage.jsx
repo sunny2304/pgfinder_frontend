@@ -12,16 +12,23 @@ const PLATFORM_FEE_PCT = 5;
 
 const labelCls = "block text-[0.7rem] font-bold uppercase tracking-[1px] text-[#8a7f74] mb-1.5";
 
-// Calculate months between two dates (minimum 1, partial months round up)
+// Calculate months between two dates using calendar months (exact, no floating point rounding issues)
+// e.g. June 1 → Sept 1 = exactly 3 months, not 3.022 that would ceil to 4
 const calcMonths = (checkIn, checkOut) => {
   if (!checkIn || !checkOut) return 1;
   const start = new Date(checkIn);
   const end = new Date(checkOut);
-  const diffMs = end - start;
-  if (diffMs <= 0) return 1;
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  const exactMonths = diffDays / 30.44;
-  return Math.max(1, Math.ceil(exactMonths));
+  if (end <= start) return 1;
+
+  // Full calendar months difference
+  let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+
+  // If there are leftover days beyond the full months, round up by 1
+  const dayAfterFullMonths = new Date(start);
+  dayAfterFullMonths.setMonth(dayAfterFullMonths.getMonth() + months);
+  if (end > dayAfterFullMonths) months += 1;
+
+  return Math.max(1, months);
 };
 
 // Load Razorpay script dynamically

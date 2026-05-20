@@ -167,9 +167,15 @@ const PropertyDetails = () => {
 
   const getCheckOutDate = (checkIn, months) => {
     if (!checkIn) return "";
-    const d = new Date(checkIn);
-    d.setMonth(d.getMonth() + months);
-    return d.toISOString().split("T")[0];
+    const start = new Date(checkIn);
+    const result = new Date(start);
+    result.setMonth(result.getMonth() + months);
+    // If day overflowed (e.g. Jan 31 + 1 month → Mar 3 instead of Feb 28),
+    // clamp back to the last day of the intended month
+    if (result.getDate() !== start.getDate()) {
+      result.setDate(0); // go to last day of previous month
+    }
+    return result.toISOString().split("T")[0];
   };
   const checkOutDate = getCheckOutDate(checkInDate, duration);
   const months = duration;
